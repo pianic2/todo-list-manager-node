@@ -494,7 +494,7 @@ Tools:
 
 * [x] Define routes
 * [x] Connect controllers
-* [x] Test endpoints
+* [ ] Test endpoints
 
 ---
 
@@ -515,10 +515,9 @@ inital commit
 init project structure and express server
 add SQLite database configuration and schema initialization
 add models for item and list with CRUD operations
+add controllers for managing lists and items with CRUD operations
+refactor enhance error handling and validation for item and list operations
 
-
-add list controller
-add item controller
 implement API routes
 test CRUD operations
 update documentation
