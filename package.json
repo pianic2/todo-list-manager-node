@@ -4,7 +4,7 @@
   "description": "Backend CMV base for Todo List Manager",
   "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node src/server.js",
     "db:init": "node scripts/init-db.js"
   },
@@ -24,5 +24,8 @@
     "better-sqlite3": "^12.8.0",
     "express": "^5.2.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
+  }
 }
