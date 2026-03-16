@@ -1,0 +1,2 @@
+-- Initial database script placeholder for Phase 1 setup.
+-- Schema creation will be added in a later phase.

@@ -1,0 +1,27 @@
+{
+  "name": "todo-list-manager-node",
+  "version": "0.1.0",
+  "description": "Backend CMV base for Todo List Manager",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pianic2/todo-list-manager-node.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pianic2/todo-list-manager-node/issues"
+  },
+  "homepage": "https://github.com/pianic2/todo-list-manager-node#readme",
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {}
+}
