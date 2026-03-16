@@ -494,15 +494,15 @@ Tools:
 
 * [x] Define routes
 * [x] Connect controllers
-* [ ] Test endpoints
+* [x] Test endpoints
 
 ---
 
 ### Finalization
 
-* [ ] Write README
-* [ ] Clean code
-* [ ] Final commit
+* [x] Write README
+* [x] Clean code
+* [x] Final commit
 
 ---
 
@@ -518,8 +518,7 @@ add models for item and list with CRUD operations
 add controllers for managing lists and items with CRUD operations
 refactor enhance error handling and validation for item and list operations
 
-implement API routes
-test CRUD operations
+add Jest testing framework and implement API tests for items and 
 update documentation
 ```
 
