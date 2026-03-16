@@ -1,2 +1,17 @@
--- Initial database script placeholder for Phase 1 setup.
--- Schema creation will be added in a later phase.
+CREATE TABLE IF NOT EXISTS lists (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	title TEXT NOT NULL,
+	description TEXT,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS items (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	text TEXT NOT NULL,
+	status TEXT CHECK(status IN ('todo', 'done')) DEFAULT 'todo',
+	list_id INTEGER NOT NULL,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME,
+	FOREIGN KEY(list_id) REFERENCES lists(id)
+);
