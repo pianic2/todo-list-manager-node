@@ -492,9 +492,9 @@ Tools:
 
 ### API
 
-* [ ] Define routes
-* [ ] Connect controllers
-* [ ] Test endpoints
+* [x] Define routes
+* [x] Connect controllers
+* [x] Test endpoints
 
 ---
 
