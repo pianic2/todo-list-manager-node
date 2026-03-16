@@ -514,10 +514,9 @@ Recommended commit strategy:
 inital commit
 init project structure and express server
 add SQLite database configuration and schema initialization
+add models for item and list with CRUD operations
 
 
-implement list model
-implement item model
 add list controller
 add item controller
 implement API routes
