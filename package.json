@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "test": "jest",
-    "start": "node src/server.js",
+    "start": "concurrently \"node src/server.js\" \"npx serve ./frontend -l 3100\"",
     "db:init": "node scripts/init-db.js"
   },
   "repository": {
@@ -25,6 +25,7 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "jest": "^30.3.0",
     "supertest": "^7.2.2"
   }

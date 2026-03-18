@@ -501,8 +501,8 @@ Tools:
 ### Finalization
 
 * [x] Write README
-* [x] Clean code
-* [x] Final commit
+* [ ] Clean code
+* [ ] Final commit
 
 ---
 
@@ -517,9 +517,9 @@ add SQLite database configuration and schema initialization
 add models for item and list with CRUD operations
 add controllers for managing lists and items with CRUD operations
 refactor enhance error handling and validation for item and list operations
-
 add Jest testing framework and implement API tests for items and 
-update documentation
+add documentation e aggiungere test API con Jest per gli elementi
+
 ```
 
 ---

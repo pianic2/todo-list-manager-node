@@ -1,5 +1,48 @@
 # Todo List Manager (Node.js)
+---
 
+## Frontend Architecture
+
+The frontend is a minimal vanilla JS SPA in `frontend/`:
+
+- **index.html** — Structure only (no inline JS/CSS)
+- **style.css** — Minimal, flat styles, no nesting
+- **api.js** — Exposes a single `apiRequest(url, method, data, headers)` for all HTTP calls
+- **main.js** — Handles all UI logic, DOM updates, and uses only `apiRequest` for backend communication
+
+**Separation of concerns:**
+
+| File        | Responsibility         |
+|-------------|-----------------------|
+| index.html  | HTML structure        |
+| style.css   | Visual styles         |
+| api.js      | HTTP utility          |
+| main.js     | App logic/UI binding  |
+
+No frameworks, no dependencies, no duplicated logic.
+
+---
+
+## How to Run Locally (Frontend)
+
+1. Start the backend server (see above).
+2. Open `frontend/index.html` in your browser.
+  - For CORS, run a local server (e.g. `npx serve frontend` or `python3 -m http.server` inside `frontend/`).
+3. The UI is minimal: lists, add/delete lists, view/add/delete/toggle items.
+
+---
+
+## API Endpoints Used by Frontend
+
+- `GET    /lists` — List all todo lists
+- `POST   /lists` — Create a new list
+- `DELETE /lists/:id` — Delete a list
+- `GET    /lists/:id/items` — List items in a list
+- `POST   /lists/:id/items` — Add item to a list
+- `PUT    /lists/:id/items/:itemId` — Toggle item status
+- `DELETE /lists/:id/items/:itemId` — Delete item
+
+All requests and responses are JSON.
 A backend REST API for managing multiple todo lists and their items, built with Node.js and Express.
 
 **Key features:**

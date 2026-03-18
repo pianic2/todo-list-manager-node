@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Todo List Manager</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" href="./favicon.ico" />
+  </head>
+  <body>
+    <main>
+      <h1>Todo List Manager</h1>
+      <section id="lists-section">
+        <h2>Lists</h2>
+        <button id="refresh-lists">Refresh</button>
+        <ul id="lists"></ul>
+        <input id="new-list-title" type="text" placeholder="New list title" />
+        <button id="add-list">Add List</button>
+      </section>
+      <section id="items-section" style="display:none">
+        <h2 id="items-list-title"></h2>
+        <button id="back-to-lists">Back</button>
+        <ul id="items"></ul>
+        <input id="new-item-text" type="text" placeholder="New item" />
+        <button id="add-item">Add Item</button>
+      </section>
+    </main>
+    <script src="api.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
