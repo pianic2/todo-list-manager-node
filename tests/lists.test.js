@@ -56,18 +56,31 @@ describe("Lists API", () => {
     expect(response.body.data.description).toBe("New description");
   });
 
-  test("DELETE /lists/:id removes a list", async () => {
+  test("DELETE /lists/:id hides a list from users", async () => {
     const created = await request(app).post("/lists").send({
       title: "To delete",
       description: "Temporary",
     });
 
     const listId = created.body.data.id;
+
+    await request(app)
+      .post(`/lists/${listId}/items`)
+      .send({ text: "Hidden with list", status: "todo" });
+
     const deleteResponse = await request(app).delete(`/lists/${listId}`);
 
     expect(deleteResponse.status).toBe(204);
 
     const getResponse = await request(app).get(`/lists/${listId}`);
     expect(getResponse.status).toBe(404);
+
+    const allListsResponse = await request(app).get("/lists");
+    expect(allListsResponse.status).toBe(200);
+    expect(allListsResponse.body.data.some((list) => list.id === listId)).toBe(false);
+
+    const itemsResponse = await request(app).get(`/lists/${listId}/items`);
+    expect(itemsResponse.status).toBe(200);
+    expect(itemsResponse.body.data).toEqual([]);
   });
 });

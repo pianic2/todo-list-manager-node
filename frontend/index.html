@@ -1,28 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Todo List Manager</title>
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./css/core.min.css" />
+    <link rel="stylesheet" href="./css/project-theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <link rel="icon" href="./favicon.ico" />
   </head>
   <body>
-    <main>
-      <h1>Todo List Manager</h1>
-      <section id="lists-section">
-        <h2>Lists</h2>
-        <button id="refresh-lists">Refresh</button>
-        <ul id="lists"></ul>
-        <input id="new-list-title" type="text" placeholder="New list title" />
-        <button id="add-list">Add List</button>
-      </section>
-      <section id="items-section" style="display:none">
-        <h2 id="items-list-title"></h2>
-        <button id="back-to-lists">Back</button>
-        <ul id="items"></ul>
-        <input id="new-item-text" type="text" placeholder="New item" />
-        <button id="add-item">Add Item</button>
-      </section>
-    </main>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar__header">
+          <p class="sidebar__eyebrow">Workspace</p>
+          <div class="sidebar__title-row">
+            <h1>Todo Lists</h1>
+            <button
+              id="close-sidebar"
+              class="icon-button sidebar__close"
+              type="button"
+              aria-label="Close menu"
+            >
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+          <p class="sidebar__description">Create and browse your lists from one place.</p>
+        </div>
+
+        <section class="sidebar__section" aria-labelledby="create-list-heading">
+          <div class="section-heading">
+            <h2 id="create-list-heading">New list</h2>
+          </div>
+          <form id="list-form" class="create-list-form form">
+            <label class="u-visually-hidden" for="list-input">List name</label>
+            <input
+              id="list-input"
+              class="form__control"
+              name="title"
+              type="text"
+              placeholder="Project, groceries, ideas..."
+              autocomplete="off"
+              required
+            />
+            <button class="button button--primary" type="submit">Create list</button>
+          </form>
+        </section>
+
+        <section class="sidebar__section" aria-labelledby="lists-heading">
+          <div class="section-heading">
+            <h2 id="lists-heading">Your lists</h2>
+          </div>
+          <ul id="lists-container" class="lists-nav" aria-label="Todo lists"></ul>
+        </section>
+      </aside>
+
+      <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+
+      <main class="main-content" id="main-content">
+        <header class="main-header">
+          <button
+            id="menu-toggle"
+            class="icon-button main-header__menu"
+            type="button"
+            aria-label="Open menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="main-header__copy">
+            <p class="main-header__eyebrow">Dashboard</p>
+            <h2 id="items-list-title">Select a list</h2>
+          </div>
+        </header>
+
+        <section id="empty-state" class="empty-state" aria-live="polite">
+          <div class="empty-state__art" aria-hidden="true">
+            <svg viewBox="0 0 320 220" role="img">
+              <rect x="24" y="24" width="272" height="172" rx="18" class="art-frame" />
+              <rect x="44" y="44" width="74" height="132" rx="12" class="art-sidebar" />
+              <rect x="134" y="44" width="142" height="28" rx="10" class="art-line art-line--strong" />
+              <rect x="134" y="84" width="118" height="14" rx="7" class="art-line" />
+              <rect x="134" y="108" width="128" height="14" rx="7" class="art-line" />
+              <rect x="134" y="132" width="104" height="14" rx="7" class="art-line" />
+              <circle cx="252" cy="160" r="24" class="art-badge" />
+              <path d="M241 160l8 8 16-18" class="art-check" />
+            </svg>
+          </div>
+          <div class="empty-state__content">
+            <h3>No list selected</h3>
+            <p>Pick a list from the sidebar or create a new one to start managing tasks.</p>
+          </div>
+        </section>
+
+        <section id="items-container" class="items-panel" hidden aria-labelledby="items-list-title">
+          <form id="item-form" class="form form--inline item-create-form" hidden>
+            <div class="form__group">
+              <label class="u-visually-hidden" for="item-input">New item</label>
+              <input
+                id="item-input"
+                class="form__control"
+                name="text"
+                type="text"
+                placeholder="Add a new task..."
+                autocomplete="off"
+                required
+              />
+            </div>
+            <button class="button button--primary" type="submit">Add item</button>
+          </form>
+          <ul id="items" class="items-list" aria-label="Todo items"></ul>
+        </section>
+      </main>
+    </div>
+
     <script src="api.js"></script>
     <script src="main.js"></script>
   </body>

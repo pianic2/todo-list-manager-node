@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require('cors');
 const listsRoutes = require("./routes/lists.routes");
 const itemsRoutes = require("./routes/items.routes");
 const loggerMiddleware = require("./middleware/logger.middleware");
@@ -6,6 +7,9 @@ const errorHandler = require("./middleware/error.middleware");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Enable CORS for all routes.
+app.use(cors());
 
 // Parse incoming JSON payloads.
 app.use(express.json());

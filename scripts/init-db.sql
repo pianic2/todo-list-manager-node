@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS lists (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	title TEXT NOT NULL,
 	description TEXT,
+	deleted INTEGER NOT NULL DEFAULT 0,
+	deleted_at DATETIME,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME
 );
@@ -11,6 +13,8 @@ CREATE TABLE IF NOT EXISTS items (
 	text TEXT NOT NULL,
 	status TEXT CHECK(status IN ('todo', 'done')) DEFAULT 'todo',
 	list_id INTEGER NOT NULL,
+	deleted INTEGER NOT NULL DEFAULT 0,
+	deleted_at DATETIME,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME,
 	FOREIGN KEY(list_id) REFERENCES lists(id)

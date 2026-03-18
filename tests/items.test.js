@@ -53,5 +53,11 @@ describe("Items API", () => {
 
     const getItemResponse = await request(app).get(`/lists/${listId}/items/${itemId}`);
     expect(getItemResponse.status).toBe(404);
+
+    const getVisibleItemsResponse = await request(app).get(`/lists/${listId}/items`);
+    expect(getVisibleItemsResponse.status).toBe(200);
+    expect(getVisibleItemsResponse.body.success).toBe(true);
+    expect(getVisibleItemsResponse.body.data.length).toBe(1);
+    expect(getVisibleItemsResponse.body.data[0].id).toBe(secondItemResponse.body.data.id);
   });
 });

@@ -14,7 +14,7 @@ function createItem(listId, data) {
 function getItemsByList(listId) {
   return db.prepare(`
     SELECT * FROM items
-    WHERE list_id = ?
+    WHERE list_id = ? AND deleted = 0
     ORDER BY created_at ASC
   `).all(listId);
 }
@@ -22,7 +22,8 @@ function getItemsByList(listId) {
 // Return a single item by its primary key, or undefined if not found.
 function getItemById(itemId) {
   return db.prepare(`
-    SELECT * FROM items WHERE id = ?
+    SELECT * FROM items
+    WHERE id = ? AND deleted = 0
   `).get(itemId);
 }
 
@@ -32,7 +33,7 @@ function updateItem(itemId, data) {
   const stmt = db.prepare(`
     UPDATE items
     SET text = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
+    WHERE id = ? AND deleted = 0
   `);
   const result = stmt.run(data.text, itemId);
   if (result.changes === 0) return undefined;
@@ -42,7 +43,9 @@ function updateItem(itemId, data) {
 // Delete an item by id. Returns true if a row was deleted.
 function deleteItem(itemId) {
   const result = db.prepare(`
-    DELETE FROM items WHERE id = ?
+    UPDATE items
+    SET deleted = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND deleted = 0
   `).run(itemId);
   return result.changes > 0;
 }
@@ -53,7 +56,7 @@ function changeStatus(itemId, status) {
   const stmt = db.prepare(`
     UPDATE items
     SET status = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
+    WHERE id = ? AND deleted = 0
   `);
   const result = stmt.run(status, itemId);
   if (result.changes === 0) return undefined;
