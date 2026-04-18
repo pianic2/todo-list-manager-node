@@ -1,5 +1,3 @@
-const DEBUG = true;
-
 const state = {
   lists: [],
   selectedListId: null,
@@ -9,45 +7,6 @@ const state = {
 };
 
 (function () {
-  function traceFunction(functionName, fn) {
-    return function tracedFunction(...args) {
-      if (DEBUG) {
-        console.log(`[DEBUG] -> ${functionName}`, { args: args, state: { ...state } });
-      }
-
-      try {
-        const result = fn.apply(this, args);
-
-        if (result && typeof result.then === 'function') {
-          return result
-            .then((value) => {
-              if (DEBUG) {
-                console.log(`[DEBUG] <- ${functionName}`, { result: value, state: { ...state } });
-              }
-              return value;
-            })
-            .catch((error) => {
-              if (DEBUG) {
-                console.log(`[DEBUG] <- ${functionName} (error)`, { error: error, state: { ...state } });
-              }
-              throw error;
-            });
-        }
-
-        if (DEBUG) {
-          console.log(`[DEBUG] <- ${functionName}`, { result: result, state: { ...state } });
-        }
-
-        return result;
-      } catch (error) {
-        if (DEBUG) {
-          console.log(`[DEBUG] <- ${functionName} (error)`, { error: error, state: { ...state } });
-        }
-        throw error;
-      }
-    };
-  }
-
   const ui = {
     listForm: document.getElementById('list-form'),
     listInput: document.getElementById('list-input'),
@@ -114,6 +73,54 @@ const state = {
     return state.lists.find((list) => normalizeId(list.id) === state.selectedListId) || null;
   }
 
+  function toUiError(error, fallbackMessage) {
+    const kind = error && error.kind ? error.kind : 'request';
+    const backendMessage = error && error.message ? error.message : fallbackMessage;
+
+    if (kind === 'validation') {
+      return {
+        kind,
+        title: 'Check the details',
+        heading: 'Validation failed',
+        message: 'The request was not accepted. Review the entered values and try again.'
+      };
+    }
+
+    if (kind === 'not_found') {
+      return {
+        kind,
+        title: 'Nothing found',
+        heading: 'Resource not found',
+        message: 'This list or item is no longer available. Refresh the lists and try again.'
+      };
+    }
+
+    if (kind === 'server') {
+      return {
+        kind,
+        title: 'Server error',
+        heading: 'Server unavailable',
+        message: 'The server could not complete the request. Try again in a moment.'
+      };
+    }
+
+    if (kind === 'network') {
+      return {
+        kind,
+        title: 'Connection problem',
+        heading: 'Unable to reach the API',
+        message: 'Check that the backend is running and that the API base URL is correct.'
+      };
+    }
+
+    return {
+      kind,
+      title: 'Request failed',
+      heading: 'Unable to complete the action',
+      message: backendMessage || fallbackMessage
+    };
+  }
+
   function renderLoading() {
     ui.mainContent.classList.toggle('is-loading', state.loading);
   }
@@ -123,7 +130,11 @@ const state = {
       return;
     }
 
-    ui.itemsListTitle.textContent = 'Something went wrong';
+    const error = typeof state.error === 'string'
+      ? toUiError(new Error(state.error), state.error)
+      : state.error;
+
+    ui.itemsListTitle.textContent = error.title;
     ui.emptyState.hidden = false;
     ui.itemsContainer.hidden = true;
     ui.itemForm.hidden = true;
@@ -138,11 +149,11 @@ const state = {
     const description = content.querySelector('p');
 
     if (title) {
-      title.textContent = 'Unable to load data';
+      title.textContent = error.heading;
     }
 
     if (description) {
-      description.textContent = state.error;
+      description.textContent = error.message;
     }
   }
 
@@ -299,7 +310,7 @@ const state = {
       await loadListsAndMaybeItems(created ? created.id : null);
       setSidebarOpen(false);
     } catch (error) {
-      setState({ loading: false, error: error.message || 'Unable to create list' });
+      setState({ loading: false, error: toUiError(error, 'Unable to create list') });
     }
   }
 
@@ -332,7 +343,7 @@ const state = {
       setState({
         selectedListId: activeListId,
         loading: false,
-        error: error.message || 'Unable to add item'
+        error: toUiError(error, 'Unable to add item')
       });
     }
   }
@@ -380,7 +391,7 @@ const state = {
         await updateList(listId, nextTitle.trim());
         await loadListsAndMaybeItems(state.selectedListId);
       } catch (error) {
-        setState({ loading: false, error: error.message || 'Unable to update list' });
+        setState({ loading: false, error: toUiError(error, 'Unable to update list') });
       }
 
       return;
@@ -398,7 +409,7 @@ const state = {
         const nextSelection = normalizeId(listId) === state.selectedListId ? null : state.selectedListId;
         await loadListsAndMaybeItems(nextSelection);
       } catch (error) {
-        setState({ loading: false, error: error.message || 'Unable to delete list' });
+        setState({ loading: false, error: toUiError(error, 'Unable to delete list') });
       }
     }
   }
@@ -422,7 +433,7 @@ const state = {
         await changeItemStatus(activeListId, itemId, nextStatus);
         await refreshSelectedItems(activeListId);
       } catch (error) {
-        setState({ selectedListId: activeListId, loading: false, error: error.message || 'Unable to update item' });
+        setState({ selectedListId: activeListId, loading: false, error: toUiError(error, 'Unable to update item') });
       }
 
       return;
@@ -439,7 +450,7 @@ const state = {
         await updateItem(activeListId, itemId, { text: nextText.trim() });
         await refreshSelectedItems(activeListId);
       } catch (error) {
-        setState({ selectedListId: activeListId, loading: false, error: error.message || 'Unable to update item' });
+        setState({ selectedListId: activeListId, loading: false, error: toUiError(error, 'Unable to update item') });
       }
 
       return;
@@ -456,7 +467,7 @@ const state = {
         await deleteItem(activeListId, itemId);
         await refreshSelectedItems(activeListId);
       } catch (error) {
-        setState({ selectedListId: activeListId, loading: false, error: error.message || 'Unable to delete item' });
+        setState({ selectedListId: activeListId, loading: false, error: toUiError(error, 'Unable to delete item') });
       }
     }
   }
@@ -475,7 +486,7 @@ const state = {
       setState({ selectedListId: normalized, items: items, loading: false, error: null });
       setSidebarOpen(false);
     } catch (error) {
-      setState({ selectedListId: normalized, items: [], loading: false, error: error.message || 'Unable to load items' });
+      setState({ selectedListId: normalized, items: [], loading: false, error: toUiError(error, 'Unable to load items') });
     }
   }
 
@@ -544,31 +555,9 @@ const state = {
     try {
       await loadListsAndMaybeItems(null);
     } catch (error) {
-      setState({ loading: false, error: error.message || 'Unable to load lists' });
+      setState({ loading: false, error: toUiError(error, 'Unable to load lists') });
     }
   }
 
-  normalizeId = traceFunction('normalizeId', normalizeId);
-  isDesktop = traceFunction('isDesktop', isDesktop);
-  setSidebarOpen = traceFunction('setSidebarOpen', setSidebarOpen);
-  setState = traceFunction('setState', setState);
-  escapeHtml = traceFunction('escapeHtml', escapeHtml);
-  getSelectedList = traceFunction('getSelectedList', getSelectedList);
-  renderLoading = traceFunction('renderLoading', renderLoading);
-  renderError = traceFunction('renderError', renderError);
-  renderEmpty = traceFunction('renderEmpty', renderEmpty);
-  renderLists = traceFunction('renderLists', renderLists);
-  renderItems = traceFunction('renderItems', renderItems);
-  render = traceFunction('render', render);
-  handleCreateList = traceFunction('handleCreateList', handleCreateList);
-  handleCreateItem = traceFunction('handleCreateItem', handleCreateItem);
-  refreshSelectedItems = traceFunction('refreshSelectedItems', refreshSelectedItems);
-  handleListAction = traceFunction('handleListAction', handleListAction);
-  handleItemAction = traceFunction('handleItemAction', handleItemAction);
-  handleSelectList = traceFunction('handleSelectList', handleSelectList);
-  loadListsAndMaybeItems = traceFunction('loadListsAndMaybeItems', loadListsAndMaybeItems);
-  init = traceFunction('init', init);
-
   init();
 })();
-

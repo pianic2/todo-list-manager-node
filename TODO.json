@@ -1,0 +1,544 @@
+{
+  "project": "todo-list-manager-node",
+  "version": "1.0.0",
+  "updated_at": "2026-04-18T00:00:00Z",
+  "source_of_truth": {
+    "primary": "codex/TODO.json",
+    "audit_reference": "repository_audit_2026-04-18",
+    "target_benchmark": "laravel-todo-list-v1"
+  },
+  "shared_rules": {
+    "status_values": ["pending", "in_progress", "blocked", "done"],
+    "phase_values": ["plan", "design", "implementation", "validation", "integration", "complete"],
+    "task_categories": ["domain", "api", "validation", "tests", "db", "ops", "security", "frontend", "docs"],
+    "estimate_values": ["S", "M", "L"],
+    "priority_formula": "(criticality*3) + (dependency_unlock*2) + roi",
+    "execution_policy": [
+      "PLAN -> REVIEW -> REFINE -> APPROVE -> EXECUTE",
+      "No task is 'done' unless verified in code and tests",
+      "Documentation alone never counts as implementation",
+      "Low-reasoning Codex prompts must be explicit, bounded, and evidence-driven",
+      "One step at a time; do not mix unrelated refactors"
+    ]
+  },
+  "project_objective": {
+    "current_state": "Local MVP / prototype with fragile API contracts and weak test isolation",
+    "target_state": "Advanced MVP aligned with Laravel reference quality",
+    "definition_of_done": [
+      "Nested list/item domain enforced end-to-end",
+      "Validation complete for create/update/status transitions",
+      "Isolated test database and negative/contract tests present",
+      "Environment-based DB/runtime config",
+      "Docker and CI reproducible",
+      "Security baseline applied",
+      "Frontend cleaned and aligned with API contract",
+      "Docs updated to match runtime reality"
+    ]
+  },
+  "architecture_decisions": [
+    {
+      "id": "ADR-001",
+      "title": "Items are always scoped to a parent list",
+      "status": "accepted",
+      "rationale": "Align domain with route contract and Laravel benchmark. Prevent cross-list access by design."
+    },
+    {
+      "id": "ADR-002",
+      "title": "Validation is centralized in dedicated validators",
+      "status": "accepted",
+      "rationale": "Mirror Laravel request-based validation with explicit create/update/status validation flows."
+    },
+    {
+      "id": "ADR-003",
+      "title": "Tests must use isolated SQLite database",
+      "status": "accepted",
+      "rationale": "Current suite mutates repository DB. This is unacceptable for reliable validation."
+    },
+    {
+      "id": "ADR-004",
+      "title": "Environment controls DB path, CORS, and runtime mode",
+      "status": "accepted",
+      "rationale": "Hardcoded paths and open defaults block serious deployment hygiene."
+    },
+    {
+      "id": "ADR-005",
+      "title": "No feature expansion before contract hardening",
+      "status": "accepted",
+      "rationale": "Authentication/API extensions before domain hardening would multiply defects."
+    }
+  ],
+  "audit_baseline": {
+    "overall_completion_estimate": 45,
+    "maturity": "prototype_advanced",
+    "critical_findings": [
+      "Item endpoints ignore listId scoping",
+      "Tests mutate tracked runtime database",
+      "Validation incomplete on update/status flows",
+      "Internal error messages leak to clients",
+      "No Docker/CI/runtime config baseline"
+    ]
+  },
+  "phases": [
+    {
+      "id": "phase_1_domain_contract_hardening",
+      "title": "Domain Contract Hardening",
+      "status": "pending",
+      "phase": "implementation",
+      "objective": "Make nested list/item contract real in backend code and tests.",
+      "roi": "highest",
+      "tasks": [
+        {
+          "id": "task_1_1_scope_items_by_list",
+          "title": "Enforce listId + itemId scoping in all item queries",
+          "status": "pending",
+          "category": "domain",
+          "priority": 10,
+          "criticality": 3,
+          "dependency_unlock": 3,
+          "roi": 3,
+          "estimate": "M",
+          "done_when": [
+            "Every item read/update/delete/status operation requires both listId and itemId",
+            "Impossible to access item through wrong list route",
+            "Model methods no longer use itemId alone for nested item operations"
+          ],
+          "files_expected": [
+            "src/controllers/items.controller.js",
+            "src/models/item.model.js",
+            "src/routes/items.routes.js"
+          ]
+        },
+        {
+          "id": "task_1_2_normalize_not_found_behavior",
+          "title": "Contractualize 404 behavior for missing list and item resources",
+          "status": "pending",
+          "category": "api",
+          "priority": 9,
+          "criticality": 3,
+          "dependency_unlock": 2,
+          "roi": 3,
+          "estimate": "S",
+          "done_when": [
+            "Missing list returns consistent 404 contract",
+            "Missing item inside valid list returns consistent 404 contract",
+            "Wrong-list item access returns 404, not accidental success"
+          ],
+          "files_expected": [
+            "src/controllers/items.controller.js",
+            "src/controllers/lists.controller.js",
+            "src/middleware/error.middleware.js"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase_2_validation_layer",
+      "title": "Validation Layer Completion",
+      "status": "pending",
+      "phase": "implementation",
+      "objective": "Introduce explicit validator layer for all write paths.",
+      "roi": "highest",
+      "tasks": [
+        {
+          "id": "task_2_1_create_dedicated_validators",
+          "title": "Create dedicated validators for lists and items",
+          "status": "pending",
+          "category": "validation",
+          "priority": 9,
+          "criticality": 3,
+          "dependency_unlock": 2,
+          "roi": 3,
+          "estimate": "M",
+          "done_when": [
+            "Validators exist for list create/update and item create/update/status",
+            "Validation logic is not duplicated across controllers",
+            "Invalid payloads fail before reaching model layer"
+          ],
+          "files_expected": [
+            "src/validators/list.validator.js",
+            "src/validators/item.validator.js",
+            "src/routes/lists.routes.js",
+            "src/routes/items.routes.js"
+          ]
+        },
+        {
+          "id": "task_2_2_validate_ids_and_status",
+          "title": "Validate route params and allowed status transitions",
+          "status": "pending",
+          "category": "validation",
+          "priority": 8,
+          "criticality": 2,
+          "dependency_unlock": 2,
+          "roi": 3,
+          "estimate": "S",
+          "done_when": [
+            "Invalid IDs return 400 with stable error shape",
+            "Invalid status values return 400",
+            "Empty or malformed update bodies return 400"
+          ],
+          "files_expected": [
+            "src/validators/item.validator.js",
+            "src/validators/list.validator.js",
+            "src/middleware/error.middleware.js"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase_3_test_isolation_and_contract_tests",
+      "title": "Test Isolation and Contract Tests",
+      "status": "pending",
+      "phase": "implementation",
+      "objective": "Replace happy-path-only testing with isolated and contract-focused coverage.",
+      "roi": "highest",
+      "tasks": [
+        {
+          "id": "task_3_1_isolate_test_database",
+          "title": "Move tests to dedicated SQLite database and bootstrap lifecycle",
+          "status": "pending",
+          "category": "tests",
+          "priority": 10,
+          "criticality": 3,
+          "dependency_unlock": 3,
+          "roi": 3,
+          "estimate": "M",
+          "done_when": [
+            "Tests never mutate tracked runtime DB",
+            "Test DB path is separate and environment-driven",
+            "Setup/teardown is deterministic"
+          ],
+          "files_expected": [
+            "tests/setup.js",
+            "src/db/database.js",
+            ".env.example",
+            ".gitignore"
+          ]
+        },
+        {
+          "id": "task_3_2_add_negative_contract_tests",
+          "title": "Add negative tests for nested ownership, validation, malformed input, and not-found flows",
+          "status": "pending",
+          "category": "tests",
+          "priority": 10,
+          "criticality": 3,
+          "dependency_unlock": 3,
+          "roi": 3,
+          "estimate": "L",
+          "done_when": [
+            "Cross-list item access test exists and passes",
+            "Invalid status test exists and passes",
+            "Update without required fields test exists and passes",
+            "Create item under missing list test exists and passes",
+            "Malformed JSON behavior is tested"
+          ],
+          "files_expected": [
+            "tests/items.test.js",
+            "tests/lists.test.js",
+            "tests/api.contract.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase_4_runtime_config_and_db_hygiene",
+      "title": "Runtime Config and DB Hygiene",
+      "status": "pending",
+      "phase": "implementation",
+      "objective": "Remove hardcoded runtime assumptions and separate environments cleanly.",
+      "roi": "high",
+      "tasks": [
+        {
+          "id": "task_4_1_env_driven_database_paths",
+          "title": "Make database location environment-driven for dev/test/prod",
+          "status": "pending",
+          "category": "db",
+          "priority": 8,
+          "criticality": 2,
+          "dependency_unlock": 3,
+          "roi": 2,
+          "estimate": "M",
+          "done_when": [
+            "DB path is read from environment",
+            "Dev/test/prod can use distinct database files",
+            "Startup fails clearly on invalid DB configuration"
+          ],
+          "files_expected": [
+            "src/db/database.js",
+            ".env.example",
+            "README.md"
+          ]
+        },
+        {
+          "id": "task_4_2_add_runtime_bootstrap_docs",
+          "title": "Document runtime bootstrap, DB initialization, and test setup truthfully",
+          "status": "pending",
+          "category": "docs",
+          "priority": 6,
+          "criticality": 1,
+          "dependency_unlock": 1,
+          "roi": 2,
+          "estimate": "S",
+          "done_when": [
+            "README matches actual server/test startup flow",
+            "No divergent setup instructions remain",
+            "DB lifecycle is explicit"
+          ],
+          "files_expected": [
+            "README.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase_5_api_error_security_baseline",
+      "title": "API Error and Security Baseline",
+      "status": "pending",
+      "phase": "implementation",
+      "objective": "Apply minimum viable hardening before any expansion.",
+      "roi": "high",
+      "tasks": [
+        {
+          "id": "task_5_1_normalize_error_contract",
+          "title": "Stop leaking internal errors and return stable API error payloads",
+          "status": "pending",
+          "category": "security",
+          "priority": 8,
+          "criticality": 3,
+          "dependency_unlock": 2,
+          "roi": 2,
+          "estimate": "S",
+          "done_when": [
+            "Unhandled exceptions do not expose raw internal messages in production mode",
+            "Validation and not-found errors use a documented JSON shape",
+            "Tests cover representative error responses"
+          ],
+          "files_expected": [
+            "src/middleware/error.middleware.js",
+            "tests/api.contract.test.js",
+            "README.md"
+          ]
+        },
+        {
+          "id": "task_5_2_configure_cors_and_basic_rate_limit",
+          "title": "Replace permissive defaults with configurable CORS and basic rate limiting",
+          "status": "pending",
+          "category": "security",
+          "priority": 7,
+          "criticality": 2,
+          "dependency_unlock": 1,
+          "roi": 2,
+          "estimate": "M",
+          "done_when": [
+            "CORS origin is configurable",
+            "Rate limit exists for write-heavy endpoints or globally",
+            "Unsafe open defaults are removed or documented as dev-only"
+          ],
+          "files_expected": [
+            "src/server.js",
+            ".env.example",
+            "README.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase_6_ops_docker_ci",
+      "title": "Ops, Docker, and CI",
+      "status": "pending",
+      "phase": "implementation",
+      "objective": "Make the project reproducible and professionally shareable.",
+      "roi": "high",
+      "tasks": [
+        {
+          "id": "task_6_1_create_docker_runtime",
+          "title": "Add Dockerfile and docker-compose for local reproducible execution",
+          "status": "pending",
+          "category": "ops",
+          "priority": 8,
+          "criticality": 2,
+          "dependency_unlock": 2,
+          "roi": 2,
+          "estimate": "M",
+          "done_when": [
+            "App can be started with docker compose",
+            "Database file/storage mount strategy is defined",
+            "README documents container workflow"
+          ],
+          "files_expected": [
+            "Dockerfile",
+            "docker-compose.yml",
+            ".dockerignore",
+            "README.md"
+          ]
+        },
+        {
+          "id": "task_6_2_add_github_actions_ci",
+          "title": "Add CI workflow for install, test, and optional frontend checks",
+          "status": "pending",
+          "category": "ops",
+          "priority": 8,
+          "criticality": 2,
+          "dependency_unlock": 2,
+          "roi": 2,
+          "estimate": "M",
+          "done_when": [
+            "CI runs tests automatically on push/pull_request",
+            "Workflow is deterministic and documented",
+            "Repository becomes shareable with reproducible validation"
+          ],
+          "files_expected": [
+            ".github/workflows/ci.yml",
+            "README.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase_7_frontend_contract_alignment",
+      "title": "Frontend Contract Alignment",
+      "status": "pending",
+      "phase": "implementation",
+      "objective": "Clean the frontend and align it with hardened backend contracts.",
+      "roi": "medium",
+      "tasks": [
+        {
+          "id": "task_7_1_remove_debug_and_baseurl_hardcode",
+          "title": "Remove permanent debug logging and make API base URL configurable",
+          "status": "pending",
+          "category": "frontend",
+          "priority": 6,
+          "criticality": 1,
+          "dependency_unlock": 1,
+          "roi": 2,
+          "estimate": "S",
+          "done_when": [
+            "No noisy debug logs remain in production path",
+            "Frontend can target configurable API origin",
+            "Local and deployed behavior are documented"
+          ],
+          "files_expected": [
+            "frontend/main.js",
+            "frontend/api.js",
+            "README.md"
+          ]
+        },
+        {
+          "id": "task_7_2_align_ui_error_states",
+          "title": "Map backend error contract into user-facing UI states",
+          "status": "pending",
+          "category": "frontend",
+          "priority": 5,
+          "criticality": 1,
+          "dependency_unlock": 1,
+          "roi": 2,
+          "estimate": "S",
+          "done_when": [
+            "Validation and not-found errors show controlled UI feedback",
+            "UI does not assume success-only flows",
+            "Frontend behavior matches backend contract"
+          ],
+          "files_expected": [
+            "frontend/main.js",
+            "frontend/api.js"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase_8_docs_release_readiness",
+      "title": "Docs and Release Readiness",
+      "status": "pending",
+      "phase": "validation",
+      "objective": "Make repo narrative and runtime reality converge.",
+      "roi": "medium",
+      "tasks": [
+        {
+          "id": "task_8_1_update_readme_to_truth",
+          "title": "Rewrite README to reflect actual architecture, setup, tests, and deployment",
+          "status": "pending",
+          "category": "docs",
+          "priority": 6,
+          "criticality": 1,
+          "dependency_unlock": 1,
+          "roi": 2,
+          "estimate": "M",
+          "done_when": [
+            "README describes real setup only",
+            "API routes and contracts match code",
+            "Testing and Docker sections are accurate"
+          ],
+          "files_expected": [
+            "README.md"
+          ]
+        },
+        {
+          "id": "task_8_2_final_audit_against_target",
+          "title": "Run final repo audit against Laravel benchmark and close remaining gaps",
+          "status": "pending",
+          "category": "docs",
+          "priority": 7,
+          "criticality": 2,
+          "dependency_unlock": 0,
+          "roi": 2,
+          "estimate": "S",
+          "done_when": [
+            "All critical findings are closed",
+            "Major findings are either closed or explicitly deferred",
+            "Project can be described as advanced MVP with evidence"
+          ],
+          "files_expected": [
+            "codex/TODO.json",
+            "README.md"
+          ]
+        }
+      ]
+    }
+  ],
+  "milestones": [
+    {
+      "id": "milestone_A_contract_safe",
+      "title": "Contract Safe Backend",
+      "depends_on": [
+        "phase_1_domain_contract_hardening",
+        "phase_2_validation_layer",
+        "phase_3_test_isolation_and_contract_tests"
+      ],
+      "success_criteria": [
+        "Nested ownership enforced",
+        "Negative tests passing",
+        "Test DB isolated"
+      ]
+    },
+    {
+      "id": "milestone_B_shareable_project",
+      "title": "Professionally Shareable Repository",
+      "depends_on": [
+        "milestone_A_contract_safe",
+        "phase_4_runtime_config_and_db_hygiene",
+        "phase_5_api_error_security_baseline",
+        "phase_6_ops_docker_ci"
+      ],
+      "success_criteria": [
+        "Docker works",
+        "CI passes",
+        "README truthful",
+        "Security baseline applied"
+      ]
+    },
+    {
+      "id": "milestone_C_advanced_mvp",
+      "title": "Advanced MVP Comparable to Laravel Reference",
+      "depends_on": [
+        "milestone_B_shareable_project",
+        "phase_7_frontend_contract_alignment",
+        "phase_8_docs_release_readiness"
+      ],
+      "success_criteria": [
+        "Frontend aligned",
+        "Docs aligned",
+        "Final audit closes critical gaps"
+      ]
+    }
+  ],
+  "current_recommended_next_task": "task_1_1_scope_items_by_list"
+}

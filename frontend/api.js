@@ -1,8 +1,23 @@
 const BASE_URL = resolveBaseUrl();
 
+class ApiError extends Error {
+  constructor(message, options = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = options.status || 0;
+    this.payload = options.payload || null;
+    this.kind = resolveErrorKind(this.status, message);
+  }
+}
+
 function resolveBaseUrl() {
   if (window.API_BASE_URL && typeof window.API_BASE_URL === 'string') {
     return window.API_BASE_URL.replace(/\/$/, '');
+  }
+
+  const metaBaseUrl = document.querySelector('meta[name="api-base-url"]');
+  if (metaBaseUrl && metaBaseUrl.content) {
+    return metaBaseUrl.content.replace(/\/$/, '');
   }
 
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -10,11 +25,27 @@ function resolveBaseUrl() {
     return 'http://localhost:3000';
   }
 
-  if (window.location.hostname) {
-    return `${window.location.protocol}//${window.location.hostname}:3000`;
+  return window.location.origin;
+}
+
+function resolveErrorKind(status, message) {
+  if (status === 400 || message === 'validation error') {
+    return 'validation';
   }
 
-  return 'http://localhost:3000';
+  if (status === 404 || /not found/i.test(message || '')) {
+    return 'not_found';
+  }
+
+  if (status >= 500) {
+    return 'server';
+  }
+
+  if (status === 0) {
+    return 'network';
+  }
+
+  return 'request';
 }
 
 async function apiRequest(path, method = 'GET', data = null, headers = {}) {
@@ -51,13 +82,20 @@ async function apiRequest(path, method = 'GET', data = null, headers = {}) {
       const message = payload && payload.error
         ? payload.error
         : `Request failed with status ${response.status}`;
-      throw new Error(message);
+      throw new ApiError(message, {
+        status: response.status,
+        payload
+      });
     }
 
     return payload;
   } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
     const message = error instanceof Error ? error.message : 'Network request failed';
-    throw new Error(message);
+    throw new ApiError(message, { status: 0 });
   }
 }
 
