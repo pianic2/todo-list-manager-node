@@ -214,6 +214,37 @@ Set the `PORT` environment variable to use a different port.
 
 ---
 
+## Docker
+
+Run the backend locally with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The container starts the API on `http://localhost:3000`, initializes the SQLite schema, and stores the database in the `todo-data` Docker volume at `/app/data/production.sqlite`.
+
+Useful commands:
+
+```bash
+docker compose ps
+docker compose logs app
+docker compose down
+```
+
+---
+
+## CI
+
+GitHub Actions runs the backend validation on every push and pull request:
+
+```bash
+npm ci
+npm test
+```
+
+---
+
 ## API Documentation
 
 All endpoints return JSON. Success and error shapes are consistent:
