@@ -170,6 +170,9 @@ The server requires these environment variables:
 ```bash
 NODE_ENV=development # development | test | production
 DATABASE_PATH=./data/development.sqlite
+CORS_ORIGIN=http://localhost:3100
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=100
 PORT=3000
 ```
 
@@ -181,7 +184,9 @@ NODE_ENV=production DATABASE_PATH=/var/lib/todo-list-manager/production.sqlite n
 ```
 
 Tests set `NODE_ENV=test` and `DATABASE_PATH` automatically to an ignored SQLite file under `tests/.tmp/`.
-Startup fails if `NODE_ENV` is not one of `development`, `test`, or `production`, or if `DATABASE_PATH` is missing or points to an invalid location.
+Startup fails if `NODE_ENV` is not one of `development`, `test`, or `production`, if `DATABASE_PATH` is missing or points to an invalid location, or if production starts without `CORS_ORIGIN`.
+`CORS_ORIGIN` accepts a comma-separated list of allowed origins. Development defaults to the local frontend origin; production must set it explicitly.
+Rate limiting is in-memory and intended as a basic single-process safeguard. Tune it with `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX`.
 
 ---
 

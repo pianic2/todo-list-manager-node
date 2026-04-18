@@ -1,15 +1,60 @@
 const express = require("express");
-const cors = require('cors');
+const cors = require("cors");
 const listsRoutes = require("./routes/lists.routes");
 const itemsRoutes = require("./routes/items.routes");
 const loggerMiddleware = require("./middleware/logger.middleware");
 const errorHandler = require("./middleware/error.middleware");
+const { readRuntimeConfig } = require("./config/runtime.config");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const runtimeConfig = readRuntimeConfig(process.env, { requireCorsOrigin: true });
 
-// Enable CORS for all routes.
-app.use(cors());
+function createCorsOptions(corsOrigins) {
+  if (corsOrigins.includes("*")) {
+    return { origin: "*" };
+  }
+
+  return {
+    origin(origin, callback) {
+      if (!origin || corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+  };
+}
+
+function createRateLimiter({ windowMs, maxRequests }) {
+  const hitsByIp = new Map();
+
+  return function rateLimiter(req, res, next) {
+    const now = Date.now();
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    const current = hitsByIp.get(ip);
+
+    if (!current || now >= current.resetAt) {
+      hitsByIp.set(ip, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    current.count += 1;
+
+    if (current.count > maxRequests) {
+      res.set("Retry-After", String(Math.ceil((current.resetAt - now) / 1000)));
+      return res.status(429).json({
+        success: false,
+        error: "too many requests",
+      });
+    }
+
+    return next();
+  };
+}
+
+app.use(cors(createCorsOptions(runtimeConfig.corsOrigins)));
+app.use(createRateLimiter(runtimeConfig.rateLimit));
 
 // Parse incoming JSON payloads.
 app.use(express.json());

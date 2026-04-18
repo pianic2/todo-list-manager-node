@@ -1,6 +1,13 @@
 const { request, app } = require("./setup");
 
 describe("API contract errors", () => {
+  test("CORS allows configured test origin", async () => {
+    const response = await request(app).get("/").set("Origin", "http://example.test");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["access-control-allow-origin"]).toBe("*");
+  });
+
   test("malformed JSON returns a validation error", async () => {
     const response = await request(app)
       .post("/lists")
