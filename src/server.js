@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const listsRoutes = require("./routes/lists.routes");
 const itemsRoutes = require("./routes/items.routes");
 const loggerMiddleware = require("./middleware/logger.middleware");
@@ -53,17 +54,34 @@ function createRateLimiter({ windowMs, maxRequests }) {
   };
 }
 
+function readOnlyMiddleware(req, res, next) {
+  if (!runtimeConfig.readOnly || req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
+    return next();
+  }
+
+  return res.status(405).json({
+    success: false,
+    error: "read-only demo",
+  });
+}
+
 app.use(cors(createCorsOptions(runtimeConfig.corsOrigins)));
 app.use(createRateLimiter(runtimeConfig.rateLimit));
 
 // Parse incoming JSON payloads.
 app.use(express.json());
 app.use(loggerMiddleware);
+app.use(express.static(path.resolve(__dirname, "../frontend")));
 
 // Health check endpoint for initial setup validation.
 app.get("/", (req, res) => {
   res.json({ status: "ok" });
 });
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+app.use(readOnlyMiddleware);
 
 // Mount route modules.
 app.use("/lists", listsRoutes);

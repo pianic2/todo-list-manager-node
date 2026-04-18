@@ -1,464 +1,204 @@
 # Todo List Manager (Node.js)
----
 
-## Frontend Architecture
+Applicazione Todo List con backend Node.js/Express, database SQLite e frontend vanilla JavaScript.
 
-The frontend is a minimal vanilla JS SPA in `frontend/`:
+Il repository contiene una demo pronta per Render in modalità read-only: i dati vengono popolati da seed credibili e l'API accetta solo letture quando `READ_ONLY=true`.
 
-- **index.html** — Structure only (no inline JS/CSS)
-- **style.css** — Minimal, flat styles, no nesting
-- **api.js** — Exposes a single `apiRequest(url, method, data, headers)` for all HTTP calls
-- **main.js** — Handles all UI logic, DOM updates, and uses only `apiRequest` for backend communication
+## Funzionalità
 
-**Separation of concerns:**
+- REST API per liste e note.
+- Note annidate sotto una lista: `/lists/:listId/items/:itemId`.
+- SQLite tramite `better-sqlite3`.
+- Soft delete per liste e note.
+- Validazione centralizzata di payload e ID.
+- Gestione errori JSON uniforme.
+- Rate limiting in memoria configurabile.
+- Frontend statico in `frontend/`, servito anche da Express.
+- Seed database idempotente con liste e note demo.
+- Modalità read-only per deploy pubblici.
+- CI GitHub Actions con `npm ci` e `npm test`.
+- Deploy Render tramite `render.yaml`.
 
-| File        | Responsibility         |
-|-------------|-----------------------|
-| index.html  | HTML structure        |
-| style.css   | Visual styles         |
-| api.js      | HTTP utility          |
-| main.js     | App logic/UI binding  |
+## Struttura
 
-No frameworks, no dependencies, no duplicated logic.
-
----
-
-## How to Run Locally (Frontend)
-
-1. Start the backend server (see above).
-2. Open `frontend/index.html` in your browser.
-  - For CORS, run a local server (e.g. `npx serve frontend` or `python3 -m http.server` inside `frontend/`).
-3. The UI is minimal: lists, add/delete lists, view/add/delete/toggle items.
-
----
-
-## API Endpoints Used by Frontend
-
-- `GET    /lists` — List all todo lists
-- `POST   /lists` — Create a new list
-- `DELETE /lists/:id` — Delete a list
-- `GET    /lists/:id/items` — List items in a list
-- `POST   /lists/:id/items` — Add item to a list
-- `PUT    /lists/:id/items/:itemId` — Toggle item status
-- `DELETE /lists/:id/items/:itemId` — Delete item
-
-All requests and responses are JSON.
-A backend REST API for managing multiple todo lists and their items, built with Node.js and Express.
-
-**Key features:**
-
-- Create and manage multiple independent lists
-- Add, update, and delete items inside each list
-- Full CRUD operations for both lists and items
-- Item status tracking (`todo` / `done`)
-- Persistent storage with SQLite
-- Request validation and centralized error handling
-- Automated test suite with Jest and Supertest
-
----
-
-## Architecture
-
-The project follows a **CMV (Controller → Model → View)** pattern, separating HTTP handling, data logic, and response formatting.
-
-```
-Client
-  ↓
-Routes          — map HTTP endpoints to controller functions
-  ↓
-Controllers     — handle requests, validate input, call models
-  ↓
-Models          — execute SQL queries against the database
-  ↓
-SQLite Database — persistent data storage
+```text
+src/
+  config/runtime.config.js
+  controllers/
+  db/database.js
+  middleware/
+  models/
+  routes/
+  validators/
+scripts/
+  init-db.js
+  init-db.sql
+frontend/
+tests/
+.github/workflows/ci.yml
+render.yaml
+docker-compose.yml
 ```
 
-| Layer | Responsibility |
-|---|---|
-| Routes | Declare endpoints, attach middleware |
-| Controllers | Orchestrate request/response cycle |
-| Models | All SQL queries and data access |
-| Middleware | Validation, logging, error handling |
+Nota: al momento non è presente un `Dockerfile` nel working tree. Il file `docker-compose.yml` resta nel repository, ma il percorso consigliato per la demo gratuita è Render.
 
----
+## Configurazione
 
-## Project Structure
+| Variabile | Obbligatoria | Default | Note |
+|---|---:|---|---|
+| `NODE_ENV` | no | `development` | Valori ammessi: `development`, `test`, `production`. |
+| `DATABASE_PATH` | sì | nessuno | Percorso del file SQLite. |
+| `PORT` | no | `3000` | Porta HTTP Express. |
+| `CORS_ORIGIN` / `CORS_ORIGINS` | sì in produzione | dev/test default | Origini consentite, separate da virgola. |
+| `READ_ONLY` | no | `false` | Se `true`, `1` o `yes`, blocca POST/PUT/PATCH/DELETE con `405`. |
+| `RATE_LIMIT_WINDOW_MS` | no | `60000` | Finestra rate limit in millisecondi. |
+| `RATE_LIMIT_MAX` | no | `100` | Numero massimo di richieste per finestra. |
 
-```
-todo-list-manager-node/
-│
-├── src/
-│   ├── server.js              # Express app entry point
-│   ├── controllers/
-│   │   ├── lists.controller.js
-│   │   └── items.controller.js
-│   ├── models/
-│   │   ├── list.model.js
-│   │   └── item.model.js
-│   ├── routes/
-│   │   ├── lists.routes.js
-│   │   └── items.routes.js
-│   ├── middleware/
-│   │   ├── validation.middleware.js
-│   │   ├── error.middleware.js
-│   │   └── logger.middleware.js
-│   └── db/
-│       └── database.js        # SQLite singleton connection
-│
-├── tests/
-│   ├── setup.js               # DB reset before each test
-│   ├── lists.test.js
-│   └── items.test.js
-│
-├── scripts/
-│   ├── init-db.js             # Database initialization script
-│   └── init-db.sql            # Schema DDL
-│
-├── data/
-│   └── database.sqlite        # SQLite database file (auto-created)
-│
-├── package.json
-└── README.md
-```
+In sviluppo, se `CORS_ORIGIN` non è impostata, sono consentiti `http://localhost:3100` e `http://127.0.0.1:3100`.
 
----
+## Avvio Locale
 
-## Database
-
-### Entities
-
-The system manages two entities: **List** and **Item**.  
-One list can contain multiple items (1 → N relationship).
-
-```
-LISTS
-─────────────────────
-id          INTEGER PK
-title       TEXT NOT NULL
-description TEXT
-created_at  DATETIME
-updated_at  DATETIME
-
-        │ 1
-        │
-        ▼ N
-
-ITEMS
-─────────────────────
-id          INTEGER PK
-text        TEXT NOT NULL
-status      TEXT ('todo' | 'done')
-list_id     INTEGER FK → lists.id
-created_at  DATETIME
-updated_at  DATETIME
-```
-
-### Initialize the database
+Installa le dipendenze:
 
 ```bash
-export NODE_ENV=development
-export DATABASE_PATH=./data/development.sqlite
-npm run db:init
+npm install
 ```
 
-This creates the SQLite file configured by `DATABASE_PATH` and runs `scripts/init-db.sql` to set up the `lists` and `items` tables.
-
-### Runtime configuration
-
-The server requires these environment variables:
-
-```bash
-NODE_ENV=development # development | test | production
-DATABASE_PATH=./data/development.sqlite
-CORS_ORIGIN=http://localhost:3100
-RATE_LIMIT_WINDOW_MS=60000
-RATE_LIMIT_MAX=100
-PORT=3000
-```
-
-Use distinct database paths for each environment, for example:
+Inizializza il database locale con schema e seed:
 
 ```bash
 NODE_ENV=development DATABASE_PATH=./data/development.sqlite npm run db:init
-NODE_ENV=production DATABASE_PATH=/var/lib/todo-list-manager/production.sqlite npm run db:init
 ```
 
-Tests set `NODE_ENV=test` and `DATABASE_PATH` automatically to an ignored SQLite file under `tests/.tmp/`.
-Startup fails if `NODE_ENV` is not one of `development`, `test`, or `production`, if `DATABASE_PATH` is missing or points to an invalid location, or if production starts without `CORS_ORIGIN`.
-`CORS_ORIGIN` accepts a comma-separated list of allowed origins. Development defaults to the local frontend origin; production must set it explicitly.
-Rate limiting is in-memory and intended as a basic single-process safeguard. Tune it with `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX`.
-
----
-
-## Installation
+Avvia backend e frontend statico con un unico processo Express:
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/pianic2/todo-list-manager-node.git
-cd todo-list-manager-node
-
-# 2. Install dependencies
-npm install
-
-# 3. Initialize the database
-export NODE_ENV=development
-export DATABASE_PATH=./data/development.sqlite
-npm run db:init
-
-# 4. Start the server
-NODE_ENV=development DATABASE_PATH=./data/development.sqlite node src/server.js
+NODE_ENV=development DATABASE_PATH=./data/development.sqlite npm start
 ```
 
-The server starts on `http://localhost:3000` by default.  
-Set the `PORT` environment variable to use a different port.
+Apri:
 
----
+```text
+http://localhost:3000/
+```
 
-## Docker
-
-Run the backend locally with Docker Compose:
+Per lo sviluppo con backend su `3000` e frontend servito separatamente su `3100`:
 
 ```bash
-docker compose up --build
+NODE_ENV=development DATABASE_PATH=./data/development.sqlite npm run dev
 ```
 
-The container starts the API on `http://localhost:3000`, initializes the SQLite schema, and stores the database in the `todo-data` Docker volume at `/app/data/production.sqlite`.
+## Demo Read-Only
 
-Useful commands:
+La modalità read-only è pensata per una demo pubblica gratuita:
 
 ```bash
-docker compose ps
-docker compose logs app
-docker compose down
+NODE_ENV=production \
+DATABASE_PATH=./data/render.sqlite \
+CORS_ORIGIN="*" \
+READ_ONLY=true \
+npm start
 ```
 
----
+Con `READ_ONLY=true`:
 
-## CI
+- `GET /lists` e `GET /lists/:listId/items` restano disponibili;
+- `POST`, `PUT`, `PATCH` e `DELETE` rispondono con:
 
-GitHub Actions runs the backend validation on every push and pull request:
+```json
+{ "success": false, "error": "read-only demo" }
+```
+
+## Seed Database
+
+`scripts/init-db.sql` crea le tabelle e popola dati demo idempotenti:
+
+- `Client Work`
+- `Learning Roadmap`
+- `Portfolio Launch`
+
+Ogni lista contiene note realistiche, alcune completate e alcune da fare. Gli insert usano `INSERT OR IGNORE`, quindi rieseguire `npm run db:init` non duplica i dati seed.
+
+## API
+
+Risposte di successo:
+
+```json
+{ "success": true, "data": {} }
+```
+
+Risposte di errore:
+
+```json
+{ "success": false, "error": "message" }
+```
+
+### Liste
+
+| Metodo | Path | Comportamento |
+|---|---|---|
+| `GET` | `/lists` | Restituisce le liste non cancellate, dalla più recente. |
+| `POST` | `/lists` | Crea una lista. Richiede `title`; `description` è opzionale. |
+| `GET` | `/lists/:id` | Restituisce una lista o `404`. |
+| `PUT` | `/lists/:id` | Aggiorna titolo e descrizione. |
+| `DELETE` | `/lists/:id` | Soft-delete della lista e delle sue note. |
+
+### Note
+
+| Metodo | Path | Comportamento |
+|---|---|---|
+| `GET` | `/lists/:listId/items` | Restituisce le note della lista, dalla più vecchia. |
+| `POST` | `/lists/:listId/items` | Crea una nota in una lista esistente. |
+| `GET` | `/lists/:listId/items/:itemId` | Restituisce una nota solo se appartiene alla lista. |
+| `PUT` | `/lists/:listId/items/:itemId` | Aggiorna il testo della nota. |
+| `DELETE` | `/lists/:listId/items/:itemId` | Soft-delete della nota. |
+| `PATCH` | `/lists/:listId/items/:itemId/status` | Imposta `status` a `todo` o `done`. |
+
+Gli ID devono essere interi positivi.
+
+## Frontend
+
+Il frontend vive in `frontend/` e non richiede build.
+
+Risoluzione API:
+
+- da `localhost`, `127.0.0.1` o `file://` usa `http://localhost:3000`;
+- da un host remoto usa la stessa origin della pagina;
+- `window.API_BASE_URL` o `<meta name="api-base-url">` possono sovrascrivere l'origin.
+
+In deploy Render, Express serve il frontend statico e l'API dalla stessa origin.
+
+## Test
+
+```bash
+npm test
+```
+
+I test usano `NODE_ENV=test` e database temporanei sotto `tests/.tmp/`.
+
+## CI/CD
+
+La CI è in `.github/workflows/ci.yml` e gira su `push` e `pull_request`:
 
 ```bash
 npm ci
 npm test
 ```
 
----
-
-## API Documentation
-
-All endpoints return JSON. Success and error shapes are consistent:
-
-```json
-// Success
-{ "success": true, "data": { ... } }
-
-// Error
-{ "success": false, "error": "message" }
-```
-
----
-
-### Lists
-
-#### GET /lists
-Return all lists ordered by creation date (newest first).
-
-```bash
-curl http://localhost:3000/lists
-```
-
-```json
-{
-  "success": true,
-  "data": [
-    { "id": 1, "title": "Groceries", "description": "Weekly shopping", "created_at": "...", "updated_at": null }
-  ]
-}
-```
-
----
-
-#### POST /lists
-Create a new list.
-
-```bash
-curl -X POST http://localhost:3000/lists \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Groceries","description":"Weekly shopping"}'
-```
-
-```json
-{ "success": true, "data": { "id": 1, "title": "Groceries", ... } }
-```
-
-| Field | Required | Type |
-|---|---|---|
-| `title` | yes | string |
-| `description` | no | string |
-
----
-
-#### GET /lists/:id
-Return a single list by ID.
-
-```bash
-curl http://localhost:3000/lists/1
-```
-
-Returns `404` if not found.
-
----
-
-#### PUT /lists/:id
-Update title and/or description of a list.
-
-```bash
-curl -X PUT http://localhost:3000/lists/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Updated title","description":"Updated description"}'
-```
-
-```json
-{ "success": true, "data": { "id": 1, "title": "Updated title", ... } }
-```
-
----
-
-#### DELETE /lists/:id
-Delete a list by ID.
-
-```bash
-curl -X DELETE http://localhost:3000/lists/1
-```
-
-Returns `204 No Content` on success, `404` if not found.
-
----
-
-### Items
-
-#### GET /lists/:listId/items
-Return all items belonging to a list, ordered oldest first.
-
-```bash
-curl http://localhost:3000/lists/1/items
-```
-
-```json
-{ "success": true, "data": [ { "id": 1, "text": "Buy milk", "status": "todo", ... } ] }
-```
-
----
-
-#### POST /lists/:listId/items
-Add a new item to a list.
-
-```bash
-curl -X POST http://localhost:3000/lists/1/items \
-  -H "Content-Type: application/json" \
-  -d '{"text":"Buy milk","status":"todo"}'
-```
-
-```json
-{ "success": true, "data": { "id": 1, "text": "Buy milk", "status": "todo", ... } }
-```
-
-| Field | Required | Type | Values |
-|---|---|---|---|
-| `text` | yes | string | any |
-| `status` | no | string | `todo` (default) or `done` |
-
----
-
-#### GET /lists/:listId/items/:itemId
-Return a single item by ID.
-
-```bash
-curl http://localhost:3000/lists/1/items/1
-```
-
-Returns `404` if not found.
-
----
-
-#### PUT /lists/:listId/items/:itemId
-Update the text of an item.
-
-```bash
-curl -X PUT http://localhost:3000/lists/1/items/1 \
-  -H "Content-Type: application/json" \
-  -d '{"text":"Buy oat milk"}'
-```
-
-```json
-{ "success": true, "data": { "id": 1, "text": "Buy oat milk", ... } }
-```
-
----
-
-#### DELETE /lists/:listId/items/:itemId
-Delete an item.
-
-```bash
-curl -X DELETE http://localhost:3000/lists/1/items/1
-```
-
-Returns `204 No Content` on success.
-
----
-
-#### PATCH /lists/:listId/items/:itemId/status
-Change the status of an item.
-
-```bash
-curl -X PATCH http://localhost:3000/lists/1/items/1/status \
-  -H "Content-Type: application/json" \
-  -d '{"status":"done"}'
-```
-
-```json
-{ "success": true, "data": { "id": 1, "status": "done", ... } }
-```
-
-| Field | Required | Values |
-|---|---|---|
-| `status` | yes | `todo` or `done` |
-
----
-
-## Testing
-
-The test suite uses **Jest** and **Supertest**. It resets the database before each test to guarantee isolation.
-
-```bash
-npm test
-```
-
-Expected output:
-
-```
-PASS  tests/lists.test.js
-PASS  tests/items.test.js
-
-Test Suites: 2 passed, 2 total
-Tests:       6 passed, 6 total
-```
-
-### What is tested
-
-- **lists.test.js** — POST, GET all, GET by id, PUT, DELETE
-- **items.test.js** — Full CRUD flow: create, list, update, change status, delete
-
----
-
-## Technologies
-
-| Component | Technology |
-|---|---|
-| Runtime | Node.js |
-| Framework | Express |
-| Database | SQLite |
-| DB Driver | better-sqlite3 |
-| Test Framework | Jest |
-| HTTP Test Client | Supertest |
+La CD per Render è configurata come Blueprint in `render.yaml`:
+
+- piano gratuito;
+- runtime Node;
+- `buildCommand: npm ci && npm run db:init`;
+- `startCommand: npm start`;
+- `READ_ONLY=true`;
+- database SQLite in `data/render.sqlite`.
+
+Per pubblicare:
+
+1. Fai push del repository su GitHub.
+2. In Render scegli **New > Blueprint**.
+3. Collega il repository.
+4. Render leggerà `render.yaml` e creerà il servizio gratuito.
+
+Render abilita gli auto deploy dal branch collegato, quindi ogni push su quel branch esegue test lato GitHub e deploy lato Render.

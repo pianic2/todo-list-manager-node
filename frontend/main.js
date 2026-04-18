@@ -1,7 +1,9 @@
 const state = {
   lists: [],
+  listItemCounts: {},
   selectedListId: null,
   items: [],
+  itemFilter: 'all',
   loading: false,
   error: null
 };
@@ -14,10 +16,19 @@ const state = {
     mainContent: document.getElementById('main-content'),
     itemsContainer: document.getElementById('items-container'),
     items: document.getElementById('items'),
+    listsOverview: document.getElementById('lists-overview'),
+    listCards: document.getElementById('list-cards'),
     itemForm: document.getElementById('item-form'),
     itemInput: document.getElementById('item-input'),
     emptyState: document.getElementById('empty-state'),
     itemsListTitle: document.getElementById('items-list-title'),
+    itemsListDescription: document.getElementById('items-list-description'),
+    mainHeaderEyebrow: document.getElementById('main-header-eyebrow'),
+    mainHeaderActions: document.getElementById('main-header-actions'),
+    overviewButton: document.getElementById('overview-button'),
+    newListButton: document.getElementById('new-list-button'),
+    editListButton: document.getElementById('edit-list-button'),
+    newItemButton: document.getElementById('new-item-button'),
     sidebar: document.getElementById('sidebar'),
     menuToggle: document.getElementById('menu-toggle'),
     closeSidebar: document.getElementById('close-sidebar'),
@@ -31,6 +42,12 @@ const state = {
   const ITEM_ACTION_TOGGLE = 'toggle';
   const ITEM_ACTION_EDIT = 'edit';
   const ITEM_ACTION_DELETE = 'delete';
+
+  const listDescriptions = {
+    'client work': 'Example operational list for a small freelance workflow.',
+    'learning roadmap': 'Next steps for improving the Laravel project.',
+    'portfolio launch': 'Tasks used to prepare the project for public sharing.'
+  };
 
   function normalizeId(value) {
     if (value === null || value === undefined) {
@@ -71,6 +88,33 @@ const state = {
 
   function getSelectedList() {
     return state.lists.find((list) => normalizeId(list.id) === state.selectedListId) || null;
+  }
+
+  function setHeader(eyebrow, title, description, showActions) {
+    ui.mainHeaderEyebrow.textContent = eyebrow;
+    ui.itemsListTitle.textContent = title;
+    ui.itemsListDescription.textContent = description;
+    ui.mainHeaderActions.hidden = !showActions;
+    ui.overviewButton.classList.toggle('is-active', !state.selectedListId);
+  }
+
+  function formatDate(value) {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(String(value).replace(' ', 'T'));
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   }
 
   function toUiError(error, fallbackMessage) {
@@ -134,10 +178,12 @@ const state = {
       ? toUiError(new Error(state.error), state.error)
       : state.error;
 
-    ui.itemsListTitle.textContent = error.title;
+    setHeader('Errore', error.title, error.message, false);
     ui.emptyState.hidden = false;
     ui.itemsContainer.hidden = true;
+    ui.listsOverview.hidden = true;
     ui.itemForm.hidden = true;
+    ui.mainHeaderActions.hidden = true;
     ui.items.innerHTML = '';
 
     const content = ui.emptyState.querySelector('.empty-state__content');
@@ -158,9 +204,15 @@ const state = {
   }
 
   function renderEmpty() {
-    ui.itemsListTitle.textContent = 'Select a list';
+    setHeader(
+      'Organizzazione',
+      'Tutte le liste',
+      'Ogni lista organizza le note. Una nota nasce sempre dentro una lista.',
+      false
+    );
     ui.emptyState.hidden = false;
     ui.itemsContainer.hidden = true;
+    ui.listsOverview.hidden = true;
     ui.itemForm.hidden = true;
     ui.items.innerHTML = '';
 
@@ -173,11 +225,11 @@ const state = {
     const description = content.querySelector('p');
 
     if (title) {
-      title.textContent = 'No list selected';
+      title.textContent = 'Nessuna lista';
     }
 
     if (description) {
-      description.textContent = 'Pick a list from the sidebar or create a new one to start managing tasks.';
+      description.textContent = 'Crea la prima lista per iniziare.';
     }
   }
 
@@ -186,8 +238,10 @@ const state = {
    * @returns {void}
    */
   function renderLists() {
+    ui.overviewButton.classList.toggle('is-active', !state.selectedListId);
+
     if (state.lists.length === 0) {
-      ui.listsContainer.innerHTML = '<li class="u-text-sm u-text-muted">No lists yet. Create your first list.</li>';
+      ui.listsContainer.innerHTML = '<li class="empty-copy">Nessuna lista. Crea la prima.</li>';
       return;
     }
 
@@ -195,10 +249,12 @@ const state = {
       const isActive = normalizeId(list.id) === state.selectedListId;
       const activeClass = isActive ? ' is-active' : '';
       const safeTitle = escapeHtml(list.title);
+      const count = state.listItemCounts[normalizeId(list.id)] || 0;
       return (
         `<li class="list-row">` +
           `<button type="button" class="list-link${activeClass}" data-list-id="${list.id}" data-action="${LIST_ACTION_SELECT}">` +
             `<span class="u-truncate">${safeTitle}</span>` +
+            `<span class="list-count">${count}</span>` +
           `</button>` +
           `<div class="list-actions">` +
             `<button type="button" class="icon-action" data-list-id="${list.id}" data-action="${LIST_ACTION_EDIT}" aria-label="Edit list">` +
@@ -215,6 +271,63 @@ const state = {
     ui.listsContainer.innerHTML = markup;
   }
 
+  function getListDescription(list) {
+    const key = String(list.title || '').trim().toLowerCase();
+    return list.description || listDescriptions[key] || 'Ogni lista organizza le note. Una nota nasce sempre dentro una lista.';
+  }
+
+  function getItemDescription(item) {
+    return item.description || '';
+  }
+
+  function renderListsOverview() {
+    setHeader(
+      'Organizzazione',
+      'Tutte le liste',
+      'Ogni lista organizza le note. Una nota nasce sempre dentro una lista.',
+      false
+    );
+    ui.emptyState.hidden = true;
+    ui.itemsContainer.hidden = true;
+    ui.listsOverview.hidden = false;
+    ui.itemForm.hidden = true;
+    ui.items.innerHTML = '';
+
+    if (state.lists.length === 0) {
+      renderEmpty();
+      return;
+    }
+
+    const markup = state.lists.map((list) => {
+      const listId = normalizeId(list.id);
+      const count = state.listItemCounts[listId] || 0;
+      const safeTitle = escapeHtml(list.title);
+      const safeDescription = escapeHtml(getListDescription(list));
+
+      return (
+        `<li class="list-card-row">` +
+          `<article class="list-card">` +
+            `<div class="list-card__meta">` +
+              `<span class="list-card__label">Lista</span>` +
+              `<span class="list-card__count">${count} note</span>` +
+            `</div>` +
+            `<div>` +
+              `<h3 class="list-card__title">${safeTitle}</h3>` +
+              `<p class="list-card__description">${safeDescription}</p>` +
+            `</div>` +
+            `<div class="list-card__actions">` +
+              `<button type="button" class="text-action text-action--muted" data-list-id="${listId}" data-action="${LIST_ACTION_SELECT}">Apri</button>` +
+              `<button type="button" class="text-action" data-list-id="${listId}" data-action="${LIST_ACTION_EDIT}">Modifica</button>` +
+              `<button type="button" class="text-action text-action--danger" data-list-id="${listId}" data-action="${LIST_ACTION_DELETE}">Elimina</button>` +
+            `</div>` +
+          `</article>` +
+        `</li>`
+      );
+    }).join('');
+
+    ui.listCards.innerHTML = markup;
+  }
+
   /**
    * Render items for the currently selected list.
    * @returns {void}
@@ -223,51 +336,59 @@ const state = {
     const selectedList = getSelectedList();
 
     if (!state.selectedListId) {
-      renderEmpty();
+      renderListsOverview();
       return;
     }
 
     if (!selectedList) {
-      ui.itemsListTitle.textContent = 'Loading list...';
+      setHeader('Lista selezionata', 'Caricamento lista...', '', false);
       ui.emptyState.hidden = true;
       ui.itemsContainer.hidden = false;
-      ui.itemForm.hidden = false;
-      ui.items.innerHTML = '<li class="u-text-sm u-text-muted">Loading items...</li>';
+      ui.listsOverview.hidden = true;
+      ui.itemForm.hidden = true;
+      ui.items.innerHTML = '<li class="empty-copy">Caricamento note...</li>';
       return;
     }
 
-    ui.itemsListTitle.textContent = selectedList.title;
+    setHeader('Lista selezionata', selectedList.title, getListDescription(selectedList), true);
     ui.emptyState.hidden = true;
     ui.itemsContainer.hidden = false;
-    ui.itemForm.hidden = false;
+    ui.listsOverview.hidden = true;
+    ui.itemForm.hidden = true;
 
-    if (state.items.length === 0) {
-      ui.items.innerHTML = '<li class="u-text-sm u-text-muted">No items in this list.</li>';
+    renderFilters();
+
+    const visibleItems = state.itemFilter === 'all'
+      ? state.items
+      : state.items.filter((item) => item.status === state.itemFilter);
+
+    if (visibleItems.length === 0) {
+      ui.items.innerHTML = '<li class="empty-copy">Nessuna nota in questa lista.</li>';
       return;
     }
 
-    const markup = state.items.map((item) => {
+    const markup = visibleItems.map((item) => {
       const itemId = normalizeId(item.id);
-      const statusClass = item.status === 'done' ? 'badge badge--success' : 'badge badge--secondary';
-      const statusLabel = item.status === 'done' ? 'Done' : 'Todo';
+      const statusClass = item.status === 'done' ? 'status-pill status-pill--done' : 'status-pill status-pill--todo';
+      const statusLabel = item.status === 'done' ? 'Completata' : 'Da fare';
       const textClass = item.status === 'done' ? 'item-card__text item-card__text--done' : 'item-card__text';
       const safeText = escapeHtml(item.text);
+      const safeDescription = escapeHtml(getItemDescription(item));
+      const itemDate = formatDate(item.updated_at || item.created_at);
 
       return (
         `<li class="item-row">` +
-          `<article class="card card--compact item-card">` +
+          `<article class="item-card">` +
             `<span class="${statusClass}">${statusLabel}</span>` +
-            `<p class="${textClass}">${safeText}</p>` +
+            `<h3 class="${textClass}">${safeText}</h3>` +
+            `${safeDescription ? `<p class="item-card__description">${safeDescription}</p>` : ''}` +
+            `<div class="item-card__footer">` +
+              `<span class="item-card__date">${escapeHtml(itemDate)}</span>` +
             `<div class="item-actions">` +
-              `<button type="button" class="icon-action" data-item-id="${itemId}" data-action="${ITEM_ACTION_TOGGLE}" aria-label="Toggle item status">` +
-                `<i class="fa-solid fa-check"></i>` +
-              `</button>` +
-              `<button type="button" class="icon-action" data-item-id="${itemId}" data-action="${ITEM_ACTION_EDIT}" aria-label="Edit item">` +
-                `<i class="fa-solid fa-pen"></i>` +
-              `</button>` +
-              `<button type="button" class="icon-action icon-action--danger" data-item-id="${itemId}" data-action="${ITEM_ACTION_DELETE}" aria-label="Delete item">` +
-                `<i class="fa-solid fa-trash"></i>` +
-              `</button>` +
+              `<button type="button" class="text-action text-action--muted" data-item-id="${itemId}" data-action="${ITEM_ACTION_TOGGLE}">${item.status === 'done' ? 'Riapri' : 'Completa'}</button>` +
+              `<button type="button" class="text-action" data-item-id="${itemId}" data-action="${ITEM_ACTION_EDIT}">Modifica</button>` +
+              `<button type="button" class="text-action text-action--danger" data-item-id="${itemId}" data-action="${ITEM_ACTION_DELETE}">Elimina</button>` +
+            `</div>` +
             `</div>` +
           `</article>` +
         `</li>`
@@ -275,6 +396,15 @@ const state = {
     }).join('');
 
     ui.items.innerHTML = markup;
+  }
+
+  function renderFilters() {
+    ui.itemsContainer.querySelectorAll('[data-filter]').forEach((button) => {
+      const isActive = button.dataset.filter === state.itemFilter;
+      button.classList.toggle('button--primary', isActive);
+      button.classList.toggle('button--outline', !isActive);
+      button.setAttribute('aria-current', isActive ? 'page' : 'false');
+    });
   }
 
   function render() {
@@ -314,6 +444,16 @@ const state = {
     }
   }
 
+  async function handlePromptCreateList() {
+    const nextTitle = window.prompt('Nome lista');
+    if (!nextTitle || !nextTitle.trim()) {
+      return;
+    }
+
+    ui.listInput.value = nextTitle.trim();
+    await handleCreateList(new Event('submit'));
+  }
+
   async function handleCreateItem(event) {
     event.preventDefault();
 
@@ -332,10 +472,14 @@ const state = {
     try {
       await createItem(activeListId, text);
       ui.itemInput.value = '';
-      const items = await getItems(activeListId);
+      const [items, counts] = await Promise.all([
+        getItems(activeListId),
+        getListCounts(state.lists)
+      ]);
       setState({
         selectedListId: activeListId,
         items: items,
+        listItemCounts: counts,
         loading: false,
         error: null
       });
@@ -348,6 +492,21 @@ const state = {
     }
   }
 
+  async function handlePromptCreateItem() {
+    const activeListId = state.selectedListId;
+    if (!activeListId) {
+      return;
+    }
+
+    const text = window.prompt('Nuova nota');
+    if (!text || !text.trim()) {
+      return;
+    }
+
+    ui.itemInput.value = text.trim();
+    await handleCreateItem(new Event('submit'));
+  }
+
   async function refreshSelectedItems(listId = state.selectedListId) {
     const activeListId = normalizeId(listId);
 
@@ -356,13 +515,22 @@ const state = {
       return;
     }
 
-    const items = await getItems(activeListId);
+    const [items, counts] = await Promise.all([
+      getItems(activeListId),
+      getListCounts(state.lists)
+    ]);
     setState({
       selectedListId: activeListId,
       items: items,
+      listItemCounts: counts,
       loading: false,
       error: null
     });
+  }
+
+  async function showListsOverview() {
+    setState({ selectedListId: null, items: [], itemFilter: 'all', error: null });
+    setSidebarOpen(false);
   }
 
   async function handleListAction(action, listId) {
@@ -381,7 +549,7 @@ const state = {
         return;
       }
 
-      const nextTitle = window.prompt('Edit list title', current.title);
+      const nextTitle = window.prompt('Modifica titolo lista', current.title);
       if (!nextTitle || !nextTitle.trim()) {
         return;
       }
@@ -398,7 +566,7 @@ const state = {
     }
 
     if (action === LIST_ACTION_DELETE) {
-      const confirmed = window.confirm('Delete this list and all its items?');
+      const confirmed = window.confirm('Eliminare questa lista e tutte le note?');
       if (!confirmed) {
         return;
       }
@@ -440,7 +608,7 @@ const state = {
     }
 
     if (action === ITEM_ACTION_EDIT) {
-      const nextText = window.prompt('Edit item text', current.text);
+      const nextText = window.prompt('Modifica nota', current.text);
       if (!nextText || !nextText.trim()) {
         return;
       }
@@ -457,7 +625,7 @@ const state = {
     }
 
     if (action === ITEM_ACTION_DELETE) {
-      const confirmed = window.confirm('Delete this item?');
+      const confirmed = window.confirm('Eliminare questa nota?');
       if (!confirmed) {
         return;
       }
@@ -479,11 +647,11 @@ const state = {
    */
   async function handleSelectList(listId) {
     const normalized = normalizeId(listId);
-    setState({ selectedListId: normalized, items: [], loading: true, error: null });
+    setState({ selectedListId: normalized, items: [], itemFilter: 'all', loading: true, error: null });
 
     try {
       const items = await getItems(normalized);
-      setState({ selectedListId: normalized, items: items, loading: false, error: null });
+      setState({ selectedListId: normalized, items: items, itemFilter: 'all', loading: false, error: null });
       setSidebarOpen(false);
     } catch (error) {
       setState({ selectedListId: normalized, items: [], loading: false, error: toUiError(error, 'Unable to load items') });
@@ -501,22 +669,54 @@ const state = {
       selected = preferred;
     } else if (current && lists.some((list) => normalizeId(list.id) === current)) {
       selected = current;
-    } else if (lists.length > 0) {
-      selected = normalizeId(lists[0].id);
     }
 
     let items = [];
-    if (selected) {
-      items = await getItems(selected);
-    }
+    const itemEntries = await Promise.all(lists.map(async (list) => {
+      const listId = normalizeId(list.id);
+      const listItems = await getItems(listId);
+      return [listId, listItems];
+    }));
+    const listItemCounts = {};
+    itemEntries.forEach(([listId, listItems]) => {
+      listItemCounts[listId] = listItems.length;
+      if (listId === selected) {
+        items = listItems;
+      }
+    });
 
     setState({
       lists: lists,
       selectedListId: selected,
       items: items,
+      listItemCounts: listItemCounts,
       loading: false,
       error: null
     });
+  }
+
+  async function getListCounts(lists) {
+    const entries = await Promise.all(lists.map(async (list) => {
+      const listId = normalizeId(list.id);
+      const listItems = await getItems(listId);
+      return [listId, listItems.length];
+    }));
+
+    return entries.reduce((counts, [listId, count]) => {
+      counts[listId] = count;
+      return counts;
+    }, {});
+  }
+
+  function getInitialListId() {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get('list');
+    if (fromQuery) {
+      return fromQuery;
+    }
+
+    const hashMatch = window.location.hash.match(/^#list-(.+)$/);
+    return hashMatch ? hashMatch[1] : null;
   }
 
   /**
@@ -526,8 +726,25 @@ const state = {
   async function init() {
     ui.listForm.addEventListener('submit', handleCreateList);
     ui.itemForm.addEventListener('submit', handleCreateItem);
+    ui.newListButton.addEventListener('click', handlePromptCreateList);
+    ui.newItemButton.addEventListener('click', handlePromptCreateItem);
+    ui.editListButton.addEventListener('click', async () => {
+      if (state.selectedListId) {
+        await handleListAction(LIST_ACTION_EDIT, state.selectedListId);
+      }
+    });
+    ui.overviewButton.addEventListener('click', showListsOverview);
 
     ui.listsContainer.addEventListener('click', async (event) => {
+      const trigger = event.target.closest('[data-list-id][data-action]');
+      if (!trigger) {
+        return;
+      }
+
+      await handleListAction(trigger.dataset.action, trigger.dataset.listId);
+    });
+
+    ui.listCards.addEventListener('click', async (event) => {
       const trigger = event.target.closest('[data-list-id][data-action]');
       if (!trigger) {
         return;
@@ -545,6 +762,15 @@ const state = {
       await handleItemAction(trigger.dataset.action, trigger.dataset.itemId);
     });
 
+    ui.itemsContainer.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-filter]');
+      if (!trigger) {
+        return;
+      }
+
+      setState({ itemFilter: trigger.dataset.filter || 'all' });
+    });
+
     ui.menuToggle.addEventListener('click', () => setSidebarOpen(true));
     ui.closeSidebar.addEventListener('click', () => setSidebarOpen(false));
     ui.sidebarBackdrop.addEventListener('click', () => setSidebarOpen(false));
@@ -553,7 +779,7 @@ const state = {
     setState({ loading: true, error: null });
 
     try {
-      await loadListsAndMaybeItems(null);
+      await loadListsAndMaybeItems(getInitialListId());
     } catch (error) {
       setState({ loading: false, error: toUiError(error, 'Unable to load lists') });
     }

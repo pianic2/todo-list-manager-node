@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: todo-list-manager-node
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run db:init
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/render.sqlite
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: READ_ONLY
+        value: "true"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: RATE_LIMIT_MAX
+        value: "100"

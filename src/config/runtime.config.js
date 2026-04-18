@@ -39,6 +39,10 @@ function readPositiveInteger(value, fallback, name) {
   return Number(value);
 }
 
+function readBoolean(value) {
+  return value === "1" || value === "true" || value === "yes";
+}
+
 function readRuntimeConfig(env = process.env, options = {}) {
   const nodeEnv = env.NODE_ENV || "development";
   const databasePath = env.DATABASE_PATH;
@@ -58,6 +62,7 @@ function readRuntimeConfig(env = process.env, options = {}) {
     nodeEnv,
     databasePath: path.resolve(databasePath),
     corsOrigins: readCorsOrigins(env, nodeEnv, requireCorsOrigin),
+    readOnly: readBoolean(env.READ_ONLY),
     rateLimit: {
       windowMs: readPositiveInteger(env.RATE_LIMIT_WINDOW_MS, 60_000, "RATE_LIMIT_WINDOW_MS"),
       maxRequests: readPositiveInteger(env.RATE_LIMIT_MAX, 100, "RATE_LIMIT_MAX"),

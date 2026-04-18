@@ -21,7 +21,19 @@ describe("runtime configuration", () => {
     expect(production.nodeEnv).toBe("production");
     expect(new Set([development.databasePath, test.databasePath, production.databasePath]).size).toBe(3);
     expect(production.corsOrigins).toEqual(["https://app.example.com"]);
+    expect(production.readOnly).toBe(false);
     expect(production.rateLimit).toEqual({ windowMs: 60000, maxRequests: 100 });
+  });
+
+  test("reads read-only mode from deployment environment", () => {
+    const config = readRuntimeConfig({
+      NODE_ENV: "production",
+      DATABASE_PATH: "/tmp/todo-list-manager-production.sqlite",
+      CORS_ORIGIN: "*",
+      READ_ONLY: "true",
+    });
+
+    expect(config.readOnly).toBe(true);
   });
 
   test("rejects invalid runtime configuration clearly", () => {
