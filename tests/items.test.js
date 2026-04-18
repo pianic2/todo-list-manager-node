@@ -110,4 +110,86 @@ describe("Items API", () => {
     expect(finalReadResponse.body.data.text).toBe("Scoped item");
     expect(finalReadResponse.body.data.status).toBe("todo");
   });
+
+  test("POST /lists/:listId/items rejects missing parent lists", async () => {
+    const response = await request(app)
+      .post("/lists/999999/items")
+      .send({ text: "Orphan item", status: "todo" });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      success: false,
+      error: "List not found",
+    });
+  });
+
+  test("PUT /lists/:listId/items/:itemId rejects invalid update payloads", async () => {
+    const listResponse = await request(app).post("/lists").send({
+      title: "List for invalid item update",
+      description: "Container",
+    });
+    const listId = listResponse.body.data.id;
+
+    const itemResponse = await request(app)
+      .post(`/lists/${listId}/items`)
+      .send({ text: "Original text", status: "todo" });
+    const itemId = itemResponse.body.data.id;
+
+    const response = await request(app).put(`/lists/${listId}/items/${itemId}`).send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      error: "validation error",
+    });
+
+    const finalReadResponse = await request(app).get(`/lists/${listId}/items/${itemId}`);
+    expect(finalReadResponse.status).toBe(200);
+    expect(finalReadResponse.body.data.text).toBe("Original text");
+  });
+
+  test("PATCH /lists/:listId/items/:itemId/status rejects invalid status", async () => {
+    const listResponse = await request(app).post("/lists").send({
+      title: "List for invalid status",
+      description: "Container",
+    });
+    const listId = listResponse.body.data.id;
+
+    const itemResponse = await request(app)
+      .post(`/lists/${listId}/items`)
+      .send({ text: "Status target", status: "todo" });
+    const itemId = itemResponse.body.data.id;
+
+    const response = await request(app)
+      .patch(`/lists/${listId}/items/${itemId}/status`)
+      .send({ status: "blocked" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      error: "validation error",
+    });
+  });
+
+  test("item routes reject invalid ids", async () => {
+    const updateResponse = await request(app)
+      .put("/lists/abc/items/1")
+      .send({ text: "Valid text" });
+
+    expect(updateResponse.status).toBe(400);
+    expect(updateResponse.body).toEqual({
+      success: false,
+      error: "validation error",
+    });
+
+    const statusResponse = await request(app)
+      .patch("/lists/1/items/xyz/status")
+      .send({ status: "done" });
+
+    expect(statusResponse.status).toBe(400);
+    expect(statusResponse.body).toEqual({
+      success: false,
+      error: "validation error",
+    });
+  });
 });

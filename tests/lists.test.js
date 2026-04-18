@@ -56,6 +56,35 @@ describe("Lists API", () => {
     expect(response.body.data.description).toBe("New description");
   });
 
+  test("PUT /lists/:id rejects invalid update payloads", async () => {
+    const created = await request(app).post("/lists").send({
+      title: "Valid title",
+      description: "Valid description",
+    });
+
+    const listId = created.body.data.id;
+    const response = await request(app).put(`/lists/${listId}`).send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      error: "validation error",
+    });
+  });
+
+  test("list routes reject invalid ids", async () => {
+    const response = await request(app).put("/lists/not-a-number").send({
+      title: "New title",
+      description: "New description",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      error: "validation error",
+    });
+  });
+
   test("DELETE /lists/:id hides a list from users", async () => {
     const created = await request(app).post("/lists").send({
       title: "To delete",

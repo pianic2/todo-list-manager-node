@@ -1,9 +1,15 @@
 const ItemModel = require("../models/item.model");
+const ListModel = require("../models/list.model");
 
 // POST /lists/:listId/items — create a new item inside the given list.
 function createItem(req, res, next) {
   try {
     const { listId } = req.params;
+    const list = ListModel.getListById(listId);
+    if (!list) {
+      return res.status(404).json({ success: false, error: "List not found" });
+    }
+
     const { text, status } = req.body;
     const item = ItemModel.createItem(listId, { text, status });
     res.status(201).json({ success: true, data: item });

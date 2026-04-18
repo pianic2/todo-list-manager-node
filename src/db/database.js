@@ -1,8 +1,9 @@
 const path = require("path");
 const Database = require("better-sqlite3");
 
-// Store the SQLite file in the project-level data folder.
-const dbPath = path.resolve(__dirname, "../../data/database.sqlite");
+const dbPath = process.env.DATABASE_PATH
+  ? path.resolve(process.env.DATABASE_PATH)
+  : path.resolve(__dirname, "../../data/database.sqlite");
 
 // Open the database in a single shared instance for the whole app.
 const db = new Database(dbPath);
