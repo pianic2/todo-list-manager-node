@@ -7,7 +7,7 @@ function createItem(listId, data) {
     VALUES (?, ?, ?)
   `);
   const result = stmt.run(data.text, data.status ?? "todo", listId);
-  return getItemById(result.lastInsertRowid);
+  return getItemById(listId, result.lastInsertRowid);
 }
 
 // Return all items that belong to the given list, ordered oldest first.
@@ -19,48 +19,48 @@ function getItemsByList(listId) {
   `).all(listId);
 }
 
-// Return a single item by its primary key, or undefined if not found.
-function getItemById(itemId) {
+// Return a single item in the given list, or undefined if not found.
+function getItemById(listId, itemId) {
   return db.prepare(`
     SELECT * FROM items
-    WHERE id = ? AND deleted = 0
-  `).get(itemId);
+    WHERE id = ? AND list_id = ? AND deleted = 0
+  `).get(itemId, listId);
 }
 
 // Update the text of an existing item.
 // Returns the updated row, or undefined if no row matched.
-function updateItem(itemId, data) {
+function updateItem(listId, itemId, data) {
   const stmt = db.prepare(`
     UPDATE items
     SET text = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ? AND deleted = 0
+    WHERE id = ? AND list_id = ? AND deleted = 0
   `);
-  const result = stmt.run(data.text, itemId);
+  const result = stmt.run(data.text, itemId, listId);
   if (result.changes === 0) return undefined;
-  return getItemById(itemId);
+  return getItemById(listId, itemId);
 }
 
-// Delete an item by id. Returns true if a row was deleted.
-function deleteItem(itemId) {
+// Delete an item in the given list. Returns true if a row was deleted.
+function deleteItem(listId, itemId) {
   const result = db.prepare(`
     UPDATE items
     SET deleted = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ? AND deleted = 0
-  `).run(itemId);
+    WHERE id = ? AND list_id = ? AND deleted = 0
+  `).run(itemId, listId);
   return result.changes > 0;
 }
 
 // Change the status of an item ('todo' or 'done').
 // Returns the updated row, or undefined if no row matched.
-function changeStatus(itemId, status) {
+function changeStatus(listId, itemId, status) {
   const stmt = db.prepare(`
     UPDATE items
     SET status = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ? AND deleted = 0
+    WHERE id = ? AND list_id = ? AND deleted = 0
   `);
-  const result = stmt.run(status, itemId);
+  const result = stmt.run(status, itemId, listId);
   if (result.changes === 0) return undefined;
-  return getItemById(itemId);
+  return getItemById(listId, itemId);
 }
 
 module.exports = {

@@ -25,7 +25,8 @@ function getItems(req, res, next) {
 // GET /lists/:listId/items/:itemId — return a single item, 404 if not found.
 function getItem(req, res, next) {
   try {
-    const item = ItemModel.getItemById(req.params.itemId);
+    const { listId, itemId } = req.params;
+    const item = ItemModel.getItemById(listId, itemId);
     if (!item) {
       return res.status(404).json({ success: false, error: "Item not found" });
     }
@@ -38,8 +39,9 @@ function getItem(req, res, next) {
 // PUT /lists/:listId/items/:itemId — update text of an item.
 function updateItem(req, res, next) {
   try {
+    const { listId, itemId } = req.params;
     const { text } = req.body;
-    const item = ItemModel.updateItem(req.params.itemId, { text });
+    const item = ItemModel.updateItem(listId, itemId, { text });
     if (!item) {
       return res.status(404).json({ success: false, error: "Item not found" });
     }
@@ -52,7 +54,8 @@ function updateItem(req, res, next) {
 // DELETE /lists/:listId/items/:itemId — remove an item.
 function deleteItem(req, res, next) {
   try {
-    const deleted = ItemModel.deleteItem(req.params.itemId);
+    const { listId, itemId } = req.params;
+    const deleted = ItemModel.deleteItem(listId, itemId);
     if (!deleted) {
       return res.status(404).json({ success: false, error: "Item not found" });
     }
@@ -65,8 +68,9 @@ function deleteItem(req, res, next) {
 // PATCH /lists/:listId/items/:itemId/status — update only the status field.
 function changeStatus(req, res, next) {
   try {
+    const { listId, itemId } = req.params;
     const { status } = req.body;
-    const item = ItemModel.changeStatus(req.params.itemId, status);
+    const item = ItemModel.changeStatus(listId, itemId, status);
     if (!item) {
       return res.status(404).json({ success: false, error: "Item not found" });
     }

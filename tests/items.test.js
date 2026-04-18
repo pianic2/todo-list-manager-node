@@ -60,4 +60,54 @@ describe("Items API", () => {
     expect(getVisibleItemsResponse.body.data.length).toBe(1);
     expect(getVisibleItemsResponse.body.data[0].id).toBe(secondItemResponse.body.data.id);
   });
+
+  test("item operations are scoped to their parent list", async () => {
+    const firstListResponse = await request(app).post("/lists").send({
+      title: "First list",
+      description: "Owns the item",
+    });
+    const secondListResponse = await request(app).post("/lists").send({
+      title: "Second list",
+      description: "Must not access it",
+    });
+
+    expect(firstListResponse.status).toBe(201);
+    expect(secondListResponse.status).toBe(201);
+
+    const firstListId = firstListResponse.body.data.id;
+    const secondListId = secondListResponse.body.data.id;
+
+    const createResponse = await request(app)
+      .post(`/lists/${firstListId}/items`)
+      .send({ text: "Scoped item", status: "todo" });
+
+    expect(createResponse.status).toBe(201);
+    const itemId = createResponse.body.data.id;
+
+    const correctListResponse = await request(app).get(`/lists/${firstListId}/items/${itemId}`);
+    expect(correctListResponse.status).toBe(200);
+    expect(correctListResponse.body.data.id).toBe(itemId);
+    expect(correctListResponse.body.data.list_id).toBe(firstListId);
+
+    const wrongListRead = await request(app).get(`/lists/${secondListId}/items/${itemId}`);
+    expect(wrongListRead.status).toBe(404);
+
+    const wrongListUpdate = await request(app)
+      .put(`/lists/${secondListId}/items/${itemId}`)
+      .send({ text: "Cross-list update" });
+    expect(wrongListUpdate.status).toBe(404);
+
+    const wrongListStatus = await request(app)
+      .patch(`/lists/${secondListId}/items/${itemId}/status`)
+      .send({ status: "done" });
+    expect(wrongListStatus.status).toBe(404);
+
+    const wrongListDelete = await request(app).delete(`/lists/${secondListId}/items/${itemId}`);
+    expect(wrongListDelete.status).toBe(404);
+
+    const finalReadResponse = await request(app).get(`/lists/${firstListId}/items/${itemId}`);
+    expect(finalReadResponse.status).toBe(200);
+    expect(finalReadResponse.body.data.text).toBe("Scoped item");
+    expect(finalReadResponse.body.data.status).toBe("todo");
+  });
 });
