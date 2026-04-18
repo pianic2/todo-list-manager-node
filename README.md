@@ -156,10 +156,32 @@ updated_at  DATETIME
 ### Initialize the database
 
 ```bash
+export NODE_ENV=development
+export DATABASE_PATH=./data/development.sqlite
 npm run db:init
 ```
 
-This creates `data/database.sqlite` and runs `scripts/init-db.sql` to set up the `lists` and `items` tables.
+This creates the SQLite file configured by `DATABASE_PATH` and runs `scripts/init-db.sql` to set up the `lists` and `items` tables.
+
+### Runtime configuration
+
+The server requires these environment variables:
+
+```bash
+NODE_ENV=development # development | test | production
+DATABASE_PATH=./data/development.sqlite
+PORT=3000
+```
+
+Use distinct database paths for each environment, for example:
+
+```bash
+NODE_ENV=development DATABASE_PATH=./data/development.sqlite npm run db:init
+NODE_ENV=production DATABASE_PATH=/var/lib/todo-list-manager/production.sqlite npm run db:init
+```
+
+Tests set `NODE_ENV=test` and `DATABASE_PATH` automatically to an ignored SQLite file under `tests/.tmp/`.
+Startup fails if `NODE_ENV` is not one of `development`, `test`, or `production`, or if `DATABASE_PATH` is missing or points to an invalid location.
 
 ---
 
@@ -174,10 +196,12 @@ cd todo-list-manager-node
 npm install
 
 # 3. Initialize the database
+export NODE_ENV=development
+export DATABASE_PATH=./data/development.sqlite
 npm run db:init
 
 # 4. Start the server
-node src/server.js
+NODE_ENV=development DATABASE_PATH=./data/development.sqlite node src/server.js
 ```
 
 The server starts on `http://localhost:3000` by default.  

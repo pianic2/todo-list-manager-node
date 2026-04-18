@@ -6,6 +6,7 @@ const testDbDir = path.resolve(__dirname, ".tmp");
 const testDbPath = path.join(testDbDir, `database-${process.env.JEST_WORKER_ID || "local"}.sqlite`);
 
 fs.mkdirSync(testDbDir, { recursive: true });
+process.env.NODE_ENV = "test";
 process.env.DATABASE_PATH = testDbPath;
 
 const app = require("../src/server");

@@ -1,9 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const Database = require("better-sqlite3");
+const { readRuntimeConfig } = require("../src/config/runtime.config");
 
 function getDatabasePath() {
-  return path.resolve(__dirname, "../data/database.sqlite");
+  return readRuntimeConfig().databasePath;
 }
 
 function getSchemaPath() {
@@ -17,6 +18,9 @@ function loadSchema(schemaPath) {
 function initializeDatabase() {
   const dbPath = getDatabasePath();
   const schemaPath = getSchemaPath();
+  const dbDir = path.dirname(dbPath);
+
+  fs.mkdirSync(dbDir, { recursive: true });
 
   const db = new Database(dbPath);
 
