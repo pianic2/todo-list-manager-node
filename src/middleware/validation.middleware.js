@@ -1,3 +1,6 @@
+const listValidator = require("../validators/list.validator");
+const itemValidator = require("../validators/item.validator");
+
 function sendValidationError(res) {
   return res.status(400).json({
     success: false,
@@ -6,9 +9,23 @@ function sendValidationError(res) {
 }
 
 function validateListCreate(req, res, next) {
-  const { title } = req.body || {};
+  if (!listValidator.validateListCreate(req.body)) {
+    return sendValidationError(res);
+  }
 
-  if (typeof title !== "string" || title.trim() === "") {
+  return next();
+}
+
+function validateListUpdate(req, res, next) {
+  if (!listValidator.validateListUpdate(req.body)) {
+    return sendValidationError(res);
+  }
+
+  return next();
+}
+
+function validateListId(req, res, next) {
+  if (!listValidator.validateListId(req.params)) {
     return sendValidationError(res);
   }
 
@@ -16,13 +33,39 @@ function validateListCreate(req, res, next) {
 }
 
 function validateItemCreate(req, res, next) {
-  const { text, status } = req.body || {};
-
-  if (typeof text !== "string" || text.trim() === "") {
+  if (!itemValidator.validateItemCreate(req.body)) {
     return sendValidationError(res);
   }
 
-  if (status !== undefined && status !== "todo" && status !== "done") {
+  return next();
+}
+
+function validateItemUpdate(req, res, next) {
+  if (!itemValidator.validateItemUpdate(req.body)) {
+    return sendValidationError(res);
+  }
+
+  return next();
+}
+
+function validateItemStatusUpdate(req, res, next) {
+  if (!itemValidator.validateItemStatusUpdate(req.body)) {
+    return sendValidationError(res);
+  }
+
+  return next();
+}
+
+function validateItemListId(req, res, next) {
+  if (!itemValidator.validateListId(req.params)) {
+    return sendValidationError(res);
+  }
+
+  return next();
+}
+
+function validateListItemIds(req, res, next) {
+  if (!itemValidator.validateListItemIds(req.params)) {
     return sendValidationError(res);
   }
 
@@ -31,5 +74,11 @@ function validateItemCreate(req, res, next) {
 
 module.exports = {
   validateListCreate,
+  validateListUpdate,
+  validateListId,
   validateItemCreate,
+  validateItemUpdate,
+  validateItemStatusUpdate,
+  validateItemListId,
+  validateListItemIds,
 };

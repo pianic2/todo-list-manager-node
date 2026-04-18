@@ -1,13 +1,24 @@
 const express = require("express");
 const router = express.Router();
 const itemsController = require("../controllers/items.controller");
-const { validateItemCreate } = require("../middleware/validation.middleware");
+const {
+  validateItemCreate,
+  validateItemUpdate,
+  validateItemStatusUpdate,
+  validateItemListId,
+  validateListItemIds,
+} = require("../middleware/validation.middleware");
 
-router.get("/:listId/items", itemsController.getItems);
-router.get("/:listId/items/:itemId", itemsController.getItem);
-router.post("/:listId/items", validateItemCreate, itemsController.createItem);
-router.put("/:listId/items/:itemId", itemsController.updateItem);
-router.delete("/:listId/items/:itemId", itemsController.deleteItem);
-router.patch("/:listId/items/:itemId/status", itemsController.changeStatus);
+router.get("/:listId/items", validateItemListId, itemsController.getItems);
+router.get("/:listId/items/:itemId", validateListItemIds, itemsController.getItem);
+router.post("/:listId/items", validateItemListId, validateItemCreate, itemsController.createItem);
+router.put("/:listId/items/:itemId", validateListItemIds, validateItemUpdate, itemsController.updateItem);
+router.delete("/:listId/items/:itemId", validateListItemIds, itemsController.deleteItem);
+router.patch(
+  "/:listId/items/:itemId/status",
+  validateListItemIds,
+  validateItemStatusUpdate,
+  itemsController.changeStatus
+);
 
 module.exports = router;
