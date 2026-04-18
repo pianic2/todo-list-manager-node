@@ -4,6 +4,14 @@ Applicazione Todo List con backend Node.js/Express, database SQLite e frontend v
 
 Il repository contiene una demo pronta per Render in modalità read-only: i dati vengono popolati da seed credibili e l'API accetta solo letture quando `READ_ONLY=true`.
 
+## Demo Live
+
+La demo pubblica è disponibile qui:
+
+```text
+https://todo-list-manager-node.onrender.com/
+```
+
 ## Funzionalità
 
 - REST API per liste e note.
