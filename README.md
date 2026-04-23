@@ -1,4 +1,4 @@
-# 🟢 Node Todo List (REST API)
+# 🟢 Node To Do List (REST API)
 
 A simple task management backend built with Node.js and Express.
 
@@ -18,11 +18,11 @@ A simple task management backend built with Node.js and Express.
 
 This project started as a backend exercise, but evolved into a structured REST API.
 
-The goal was not just to build a Todo List, but to design a clean and consistent API that could be used in real applications.
+The goal was not just to build a To Do List, but to design a clean and consistent API that could be used in real applications.
 
 ---
 
-## ⚙️ What you can do
+## ⚙️ What can you do?
 
 - retrieve lists and tasks through a REST API  
 - navigate nested resources (`/lists/:listId/items`)  
@@ -33,7 +33,7 @@ The public demo runs in read-only mode to keep data consistent.
 
 ---
 
-## 🧠 What I focused on
+## 🧠 What did I focus on?
 
 While building this project, I worked on:
 
@@ -59,7 +59,7 @@ This is a backend-first project focused on structure and reliability.
 
 ## 🎯 Why this project
 
-This is not just a Todo API.
+This is not just a To Do API.
 
 It shows how I approach:
 - API design  
@@ -74,4 +74,6 @@ Built to be simple, but also clean and extendable.
 
 - The demo runs in read-only mode  
 - Data is seeded and resettable  
-- API responses follow a consistent JSON format  
+- API responses follow a consistent JSON format
+
+I'm going to grow as a developer by working on real-world projects and by contributing to a production-level- system
